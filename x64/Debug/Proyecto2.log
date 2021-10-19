@@ -1,0 +1,5 @@
+﻿  Main.cpp
+D:\OneDrive\Documentos\ITAM\Quinto semestre\Gráficos por computadora\Proyecto2\includes\learnopengl\shader_m.h(44,40): warning C4101: 'e': variable local sin referencia
+D:\OneDrive\Documentos\ITAM\Quinto semestre\Gráficos por computadora\Proyecto2\Main.cpp(265,56): warning C4267: 'argumento': conversión de 'size_t' a 'GLsizei'; posible pérdida de datos
+D:\OneDrive\Documentos\ITAM\Quinto semestre\Gráficos por computadora\Proyecto2\Main.cpp(271,55): warning C4267: 'argumento': conversión de 'size_t' a 'GLsizei'; posible pérdida de datos
+  Proyecto2.vcxproj -> D:\OneDrive\Documentos\ITAM\Quinto semestre\Gráficos por computadora\Proyecto2\x64\Debug\Proyecto2.exe
