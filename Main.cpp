@@ -151,7 +151,10 @@ int main()
             t->B = t->C;
             t->C = aux;
         }
-        triangulos.push_back(t);
+        triangulos.push_back(t);        
+        // Para imprimir las orillas. Lo dejo por cualquier cosa.
+        // printf("(%.10f, %.10f)\n", t->B.real(), t->B.imag());        
+        // printf("(%.10f, %.10f)\n", t->C.real(), t->C.imag());
     }
 
     // Subdividimos los triángulos las veces que indice la constante NUM_SUBDIVISIONES.
@@ -162,38 +165,107 @@ int main()
     // Guardamos los triángulos en formato de vértices para OpenGL.
     list<struct triangulo*> ::iterator it;
     vector<float> vert_ceros;
-    vector<float> vert_unos;
-    float aleatorio;
+    vector<float> vert_unos;    
     for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        if ((*it)->color == 0) {
-            aleatorio = (float)rand() / (float)(RAND_MAX / 1);
+        if ((*it)->color == 0) {            
             vert_ceros.push_back((float)(*it)->A.real());
             vert_ceros.push_back((float)(*it)->A.imag());
-            // vert_ceros.push_back(aleatorio);
+            vert_ceros.push_back(0.5f);
+            // Vector normal:
             vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(1.0f);
+
             vert_ceros.push_back((float)(*it)->B.real());
             vert_ceros.push_back((float)(*it)->B.imag());
-            // vert_ceros.push_back(aleatorio);
+            vert_ceros.push_back(0.5f);
+            // Vector normal:
             vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(1.0f);
+
             vert_ceros.push_back((float)(*it)->C.real());
             vert_ceros.push_back((float)(*it)->C.imag());
-            // vert_ceros.push_back(aleatorio);
+            vert_ceros.push_back(0.5f);
+            // Vector normal:
             vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(0.0f);            
+            vert_ceros.push_back(1.0f);
+
+            //------------- Parte 2
+            vert_ceros.push_back((float)(*it)->A.real());
+            vert_ceros.push_back((float)(*it)->A.imag());
+            vert_ceros.push_back(-0.5f);
+            // Vector normal:
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(-1.0f);
+
+            vert_ceros.push_back((float)(*it)->B.real());
+            vert_ceros.push_back((float)(*it)->B.imag());
+            vert_ceros.push_back(-0.5f);
+            // Vector normal:
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(-1.0f);
+
+            vert_ceros.push_back((float)(*it)->C.real());
+            vert_ceros.push_back((float)(*it)->C.imag());
+            vert_ceros.push_back(-0.5f);
+            // Vector normal:
+            vert_ceros.push_back(0.0f);
+            vert_ceros.push_back(0.0f);            
+            vert_ceros.push_back(-1.0f);
         }
-        else {
-            aleatorio = (float)rand() / (float)(RAND_MAX / 1);
+        else {            
+            vert_unos.push_back((float)(*it)->A.real());
+            vert_unos.push_back((float)(*it)->A.imag());            
+            vert_unos.push_back(0.5f);
+            // Vector normal:
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(1.0f);
+
+            vert_unos.push_back((float)(*it)->B.real());
+            vert_unos.push_back((float)(*it)->B.imag());            
+            vert_unos.push_back(0.5f);
+            // Vector normal:
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(1.0f);
+
+            vert_unos.push_back((float)(*it)->C.real());
+            vert_unos.push_back((float)(*it)->C.imag());            
+            vert_unos.push_back(0.5f);
+            // Vector normal:
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(1.0f);
+
+            // Parte 2
             vert_unos.push_back((float)(*it)->A.real());
             vert_unos.push_back((float)(*it)->A.imag());
-            // vert_unos.push_back(aleatorio);
+            vert_unos.push_back(-0.5f);
+            // Vector normal:
             vert_unos.push_back(0.0f);
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(-1.0f);
+
             vert_unos.push_back((float)(*it)->B.real());
             vert_unos.push_back((float)(*it)->B.imag());
-            // vert_unos.push_back(aleatorio);
+            vert_unos.push_back(-0.5f);
+            // Vector normal:
             vert_unos.push_back(0.0f);
+            vert_unos.push_back(0.0f);
+            vert_unos.push_back(-1.0f);
+
             vert_unos.push_back((float)(*it)->C.real());
             vert_unos.push_back((float)(*it)->C.imag());
-            // vert_unos.push_back(aleatorio);
+            vert_unos.push_back(-0.5f);
+            // Vector normal:
             vert_unos.push_back(0.0f);
+            vert_unos.push_back(0.0f);            
+            vert_unos.push_back(-1.0f);
         }
     }
     // #######################################################################################
@@ -245,66 +317,151 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-        -0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-        -0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
 
-    unsigned int VBOs[2], VAOs[2];
-    glGenVertexArrays(2, VAOs); 
-    glGenBuffers(2, VBOs);    
+    float verticesOrilla[] = {
+         // Vértices                            // Vector normal
+         0.9510565163,  0.3090169944,  0.5,     1.0,            0.0,            0.0, //A
+         0.9510565163,  0.3090169944, -0.5,     1.0,            0.0,            0.0, //B
+         0.9510565163, -0.3090169944,  0.5,     1.0,            0.0,            0.0, //C
+         0.9510565163,  0.3090169944, -0.5,     1.0,            0.0,            0.0, //B
+         0.9510565163, -0.3090169944,  0.5,     1.0,            0.0,            0.0, //C
+         0.9510565163, -0.3090169944, -0.5,     1.0,            0.0,            0.0, //D
+
+         0.5877852523,  0.8090169944,  0.5,     0.809016994375, 0.587785252292, 0.0, //E
+         0.5877852523,  0.8090169944, -0.5,     0.809016994375, 0.587785252292, 0.0, //F
+         0.9510565163,  0.3090169944,  0.5,     0.809016994375, 0.587785252292, 0.0, //A
+         0.5877852523,  0.8090169944, -0.5,     0.809016994375, 0.587785252292, 0.0, //F
+         0.9510565163,  0.3090169944,  0.5,     0.809016994375, 0.587785252292, 0.0, //A
+         0.9510565163,  0.3090169944, -0.5,     0.809016994375, 0.587785252292, 0.0, //B
+
+         0.0000000000,  1.0000000000,  0.5,     0.309016994375, 0.951056516295, 0.0, //G
+         0.0000000000,  1.0000000000, -0.5,     0.309016994375, 0.951056516295, 0.0,//H
+         0.5877852523,  0.8090169944,  0.5,     0.309016994375, 0.951056516295, 0.0, //E
+         0.0000000000,  1.0000000000, -0.5,     0.309016994375, 0.951056516295, 0.0, //H
+         0.5877852523,  0.8090169944,  0.5,     0.309016994375, 0.951056516295, 0.0, //E
+         0.5877852523,  0.8090169944, -0.5,     0.309016994375, 0.951056516295, 0.0, //F
+
+        -0.5877852523,  0.8090169944,  0.5,    -0.309016994375, 0.951056516295, 0.0, //I
+        -0.5877852523,  0.8090169944, -0.5,    -0.309016994375, 0.951056516295, 0.0, //J
+         0.0000000000,  1.0000000000,  0.5,    -0.309016994375, 0.951056516295, 0.0, //G
+        -0.5877852523,  0.8090169944, -0.5,    -0.309016994375, 0.951056516295, 0.0, //J
+         0.0000000000,  1.0000000000,  0.5,    -0.309016994375, 0.951056516295, 0.0, //G
+         0.0000000000,  1.0000000000, -0.5,    -0.309016994375, 0.951056516295, 0.0, //H
+
+        -0.9510565163,  0.3090169944,  0.5,    -0.809016994375, 0.587785252292, 0.0, //K
+        -0.9510565163,  0.3090169944, -0.5,    -0.809016994375, 0.587785252292, 0.0, //L
+        -0.5877852523,  0.8090169944,  0.5,    -0.809016994375, 0.587785252292, 0.0, //I
+        -0.9510565163,  0.3090169944, -0.5,    -0.809016994375, 0.587785252292, 0.0, //L
+        -0.5877852523,  0.8090169944,  0.5,    -0.809016994375, 0.587785252292, 0.0, //I
+        -0.5877852523,  0.8090169944, -0.5,    -0.809016994375, 0.587785252292, 0.0, //J
+
+        -0.9510565163, -0.3090169944,  0.5,    -1.0,            0.0,            0.0, //M
+        -0.9510565163, -0.3090169944, -0.5,    -1.0,            0.0,            0.0, //N
+        -0.9510565163,  0.3090169944,  0.5,    -1.0,            0.0,            0.0, //K
+        -0.9510565163, -0.3090169944, -0.5,    -1.0,            0.0,            0.0, //N
+        -0.9510565163,  0.3090169944,  0.5,    -1.0,            0.0,            0.0, //K
+        -0.9510565163,  0.3090169944, -0.5,    -1.0,            0.0,            0.0, //L
+
+        -0.5877852523, -0.8090169944,  0.5,    -0.809016994375,-0.587785252292, 0.0, //O
+        -0.5877852523, -0.8090169944, -0.5,    -0.809016994375,-0.587785252292, 0.0, //P
+        -0.9510565163, -0.3090169944,  0.5,    -0.809016994375,-0.587785252292, 0.0, //M
+        -0.5877852523, -0.8090169944, -0.5,    -0.809016994375,-0.587785252292, 0.0, //P
+        -0.9510565163, -0.3090169944,  0.5,    -0.809016994375,-0.587785252292, 0.0, //M
+        -0.9510565163, -0.3090169944, -0.5,    -0.809016994375,-0.587785252292, 0.0, //N
+
+        -0.0000000000, -1.0000000000,  0.5,    -0.309016994375,-0.951056516295, 0.0, //Q
+        -0.0000000000, -1.0000000000, -0.5,    -0.309016994375,-0.951056516295, 0.0, //R
+        -0.5877852523, -0.8090169944,  0.5,    -0.309016994375,-0.951056516295, 0.0, //O
+        -0.0000000000, -1.0000000000, -0.5,    -0.309016994375,-0.951056516295, 0.0, //R
+        -0.5877852523, -0.8090169944,  0.5,    -0.309016994375,-0.951056516295, 0.0, //O
+        -0.5877852523, -0.8090169944, -0.5,    -0.309016994375,-0.951056516295, 0.0, //P
+
+         0.5877852523, -0.8090169944,  0.5,    0.309016994375, -0.951056516295, 0.0, //S
+         0.5877852523, -0.8090169944, -0.5,    0.309016994375, -0.951056516295, 0.0, //T
+        -0.0000000000, -1.0000000000,  0.5,    0.309016994375, -0.951056516295, 0.0, //Q
+         0.5877852523, -0.8090169944, -0.5,    0.309016994375, -0.951056516295, 0.0, //T
+        -0.0000000000, -1.0000000000,  0.5,    0.309016994375, -0.951056516295, 0.0, //Q
+        -0.0000000000, -1.0000000000, -0.5,    0.309016994375, -0.951056516295, 0.0, //R
+
+         0.9510565163, -0.3090169944,  0.5,    0.809016994375, -0.587785252292, 0.0, //C
+         0.9510565163, -0.3090169944, -0.5,    0.809016994375, -0.587785252292, 0.0, //D
+         0.5877852523, -0.8090169944,  0.5,    0.809016994375, -0.587785252292, 0.0, //S
+         0.9510565163, -0.3090169944, -0.5,    0.809016994375, -0.587785252292, 0.0, //D
+         0.5877852523, -0.8090169944,  0.5,    0.809016994375, -0.587785252292, 0.0, //S
+         0.5877852523, -0.8090169944, -0.5,    0.809016994375, -0.587785252292, 0.0  //T
+    };
+
+    unsigned int VBOs[3], VAOs[3];
+    glGenVertexArrays(3, VAOs); 
+    glGenBuffers(3, VBOs);    
     // Triángulos tipo cero de la teselación
     // --------------------
     glBindVertexArray(VAOs[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
     glBufferData(GL_ARRAY_BUFFER, vert_ceros.size() * sizeof(float), &vert_ceros[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     // Triángulos tipo uno de la teselación
     // ---------------------
     glBindVertexArray(VAOs[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
     glBufferData(GL_ARRAY_BUFFER, vert_unos.size() * sizeof(float), &vert_unos[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // Orilas de la teselación
+    glBindVertexArray(VAOs[2]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[2]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesOrilla), verticesOrilla, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // first, configure the cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
@@ -317,8 +474,11 @@ int main()
     glBindVertexArray(cubeVAO);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
     unsigned int lightCubeVAO;
@@ -328,7 +488,7 @@ int main()
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // Para dibujar únicamente los bordes
@@ -351,9 +511,15 @@ int main()
         // glClearColor(0.871f, 0.878f, 0.95f, 1.0f);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // change the light's position values over time (can be done anywhere in the render loop actually, but try to do it at least before using the light source positions)
+        lightPos.x = 1.0f + sin(glfwGetTime()) * 2.0f;
+        lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
         
         ourShader.use();           
         ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f); // Para ambos casos, vamos a usar esto de luz. Puede ser una mejor manera de asignar el color también.
+        ourShader.setVec3("lightPos", lightPos);
+        ourShader.setVec3("viewPos", camera.Position);
 
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -364,7 +530,7 @@ int main()
         ourShader.setMat4("view", view);
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+        model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
         ourShader.setMat4("model", model);
     
         unsigned int color1Loc = glGetUniformLocation(ourShader.ID, "objectColor");
@@ -379,6 +545,10 @@ int main()
         glBindVertexArray(VAOs[1]);
         glDrawArrays(GL_TRIANGLES, 0, vert_unos.size());
 
+        // Orillas
+        glBindVertexArray(VAOs[2]);
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(verticesOrilla));
+
         ourShader.use();
         ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
         ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -390,10 +560,11 @@ int main()
         ourShader.setMat4("view", view);
 
         // world transformation
-        model = glm::mat4(1.0f);
+        model = glm::mat4(1.0f);        
+        model = glm::scale(model, glm::vec3(0.2f)); // lo desaparezco por ahora
         ourShader.setMat4("model", model);
 
-        // render the cube
+        // render the cube                
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
