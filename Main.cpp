@@ -169,25 +169,31 @@ int main()
             aleatorio = (float)rand() / (float)(RAND_MAX / 1);
             vert_ceros.push_back((float)(*it)->A.real());
             vert_ceros.push_back((float)(*it)->A.imag());
-            vert_ceros.push_back(aleatorio);
+            // vert_ceros.push_back(aleatorio);
+            vert_ceros.push_back(0.0f);
             vert_ceros.push_back((float)(*it)->B.real());
             vert_ceros.push_back((float)(*it)->B.imag());
-            vert_ceros.push_back(aleatorio);
+            // vert_ceros.push_back(aleatorio);
+            vert_ceros.push_back(0.0f);
             vert_ceros.push_back((float)(*it)->C.real());
             vert_ceros.push_back((float)(*it)->C.imag());
-            vert_ceros.push_back(aleatorio);
+            // vert_ceros.push_back(aleatorio);
+            vert_ceros.push_back(0.0f);
         }
         else {
             aleatorio = (float)rand() / (float)(RAND_MAX / 1);
             vert_unos.push_back((float)(*it)->A.real());
             vert_unos.push_back((float)(*it)->A.imag());
-            vert_unos.push_back(aleatorio);
+            // vert_unos.push_back(aleatorio);
+            vert_unos.push_back(0.0f);
             vert_unos.push_back((float)(*it)->B.real());
             vert_unos.push_back((float)(*it)->B.imag());
-            vert_unos.push_back(aleatorio);
+            // vert_unos.push_back(aleatorio);
+            vert_unos.push_back(0.0f);
             vert_unos.push_back((float)(*it)->C.real());
             vert_unos.push_back((float)(*it)->C.imag());
-            vert_unos.push_back(aleatorio);
+            // vert_unos.push_back(aleatorio);
+            vert_unos.push_back(0.0f);
         }
     }
     // #######################################################################################
