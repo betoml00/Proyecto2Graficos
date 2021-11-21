@@ -41,6 +41,7 @@ float lastFrame = 0.0f;
 
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+bool circuloLampara = true;
 
 // #############################################################################
 // Declaración de constantes a utilizar a lo largo de este programa
@@ -513,8 +514,12 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // change the light's position values over time (can be done anywhere in the render loop actually, but try to do it at least before using the light source positions)
-        lightPos.x = 1.0f + sin(glfwGetTime()) * 2.0f;
-        lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
+        // Mover la luz en círculos
+        float radio = 5.0f;
+        if (circuloLampara) {
+            lightPos.x = radio * cos(1.25 * glfwGetTime());
+            lightPos.z = radio * sin(1.25 * glfwGetTime());
+        }        
         
         ourShader.use();           
         ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f); // Para ambos casos, vamos a usar esto de luz. Puede ser una mejor manera de asignar el color también.
@@ -611,6 +616,19 @@ void processInput(GLFWwindow* window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+    
+    // Mover la lámpara
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        lightPos.x += 0.01;
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        lightPos.x -= 0.01;
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        lightPos.y += 0.01;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        lightPos.y -= 0.01;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        circuloLampara = !circuloLampara;
+
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
