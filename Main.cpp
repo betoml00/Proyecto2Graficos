@@ -42,6 +42,14 @@ float lastFrame = 0.0f;
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 bool circuloLampara = true;
+int estadoAnt = GLFW_RELEASE;
+// positions of the point lights
+glm::vec3 pointLightPositions[] = {
+    glm::vec3(0.7f,  0.2f,  2.0f),
+    glm::vec3(2.3f, -3.3f, -4.0f),
+    glm::vec3(-4.0f,  2.0f, -12.0f),
+    glm::vec3(0.0f,  0.0f, -3.0f)
+};
 
 // #############################################################################
 // Declaración de constantes a utilizar a lo largo de este programa
@@ -472,12 +480,9 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindVertexArray(cubeVAO);
-
-    // position attribute
+    glBindVertexArray(cubeVAO);    
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // normal attribute
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
@@ -485,10 +490,8 @@ int main()
     unsigned int lightCubeVAO;
     glGenVertexArrays(1, &lightCubeVAO);
     glBindVertexArray(lightCubeVAO);
-
-    // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
+    
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
@@ -502,88 +505,147 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        processInput(window);                        
+        processInput(window);                                
 
-        // Colores
-        GLfloat color1[] = { 0.043f, 0.145f, 0.271f };
-        GLfloat color2[] = { 0.698f, 0.761f, 0.929f };
-
-        // Render
-        // glClearColor(0.871f, 0.878f, 0.95f, 1.0f);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(185.0 / 255.0, 200.0 / 255.0, 215.0 / 255.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // change the light's position values over time (can be done anywhere in the render loop actually, but try to do it at least before using the light source positions)
-        // Mover la luz en círculos
-        float radio = 5.0f;
+        // Mover la luz en una esfera - https://en.wikipedia.org/wiki/Spiral#Spherical_spirals
         if (circuloLampara) {
-            lightPos.x = radio * cos(1.25 * glfwGetTime());
-            lightPos.z = radio * sin(1.25 * glfwGetTime());
+            float c = 18.0;
+            float t = sin(0.1 * glfwGetTime()) * (pi / 2) + (pi / 2);
+            float r = 2;
+
+            pointLightPositions[0].x = r * sin(t) * sin(c * t);
+            pointLightPositions[0].y = r * cos(t);
+            pointLightPositions[0].z = r * sin(t) * cos(c * t);
         }        
         
-        ourShader.use();           
-        ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f); // Para ambos casos, vamos a usar esto de luz. Puede ser una mejor manera de asignar el color también.
-        ourShader.setVec3("lightPos", lightPos);
-        ourShader.setVec3("viewPos", camera.Position);
+        // Pasar la ubicación de la luz y de dónde se está viendo
+        ourShader.use();                   
+        // ourShader.setVec3("light.position", lightPos);
+        ourShader.setVec3("viewPos", camera.Position);        
 
-        // pass projection matrix to shader (note that in this case it could change every frame)
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        ourShader.setMat4("projection", projection);
-
-        // camera/view transformation
-        glm::mat4 view = camera.GetViewMatrix();
-        ourShader.setMat4("view", view);
-
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
-        ourShader.setMat4("model", model);
-    
-        unsigned int color1Loc = glGetUniformLocation(ourShader.ID, "objectColor");
-        glUniform3fv(color1Loc, 1, color1);        
-        
-        glBindVertexArray(VAOs[0]);        
-        glDrawArrays(GL_TRIANGLES, 0, vert_ceros.size());
-                   
-        unsigned int color2Loc = glGetUniformLocation(ourShader.ID, "objectColor");
-        glUniform3fv(color2Loc, 1, color2);
-        
-        glBindVertexArray(VAOs[1]);
-        glDrawArrays(GL_TRIANGLES, 0, vert_unos.size());
-
-        // Orillas
-        glBindVertexArray(VAOs[2]);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(verticesOrilla));
-
-        ourShader.use();
-        ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-        ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        /*
+           Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
+           the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
+           by defining light types as classes and set their values in there, or by using a more efficient uniform approach
+           by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
+        */
+        glm::vec3 pointLightColors[] = {
+            glm::vec3(236.0/255.0, 239.0 / 255.0, 248.0 / 255.0),
+            glm::vec3(157.0 / 255.0, 190.0 / 255.0, 212.0 / 255.0),
+            glm::vec3(209.0 / 255.0, 216.0 / 255.0, 226.0 / 255.0),            
+            glm::vec3(79.0 / 255.0, 156.0 / 255.0, 200.0 / 255.0)
+        };
+        // directional light
+        ourShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        ourShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
+        ourShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
+        ourShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        // point light 1
+        ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+        ourShader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
+        ourShader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+        ourShader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+        ourShader.setFloat("pointLights[0].constant", 1.0f);
+        ourShader.setFloat("pointLights[0].linear", 0.09);
+        ourShader.setFloat("pointLights[0].quadratic", 0.032);
+        // point light 2
+        ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+        ourShader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
+        ourShader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+        ourShader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+        ourShader.setFloat("pointLights[1].constant", 1.0f);
+        ourShader.setFloat("pointLights[1].linear", 0.09);
+        ourShader.setFloat("pointLights[1].quadratic", 0.032);
+        // point light 3
+        ourShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+        ourShader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
+        ourShader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+        ourShader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+        ourShader.setFloat("pointLights[2].constant", 1.0f);
+        ourShader.setFloat("pointLights[2].linear", 0.09);
+        ourShader.setFloat("pointLights[2].quadratic", 0.032);
+        // point light 4
+        ourShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+        ourShader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
+        ourShader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+        ourShader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+        ourShader.setFloat("pointLights[3].constant", 1.0f);
+        ourShader.setFloat("pointLights[3].linear", 0.09);
+        ourShader.setFloat("pointLights[3].quadratic", 0.032);
+        // spotLight
+        ourShader.setVec3("spotLight.position", camera.Position);
+        ourShader.setVec3("spotLight.direction", camera.Front);
+        ourShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+        ourShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("spotLight.constant", 1.0f);
+        ourShader.setFloat("spotLight.linear", 0.09);
+        ourShader.setFloat("spotLight.quadratic", 0.032);
+        ourShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+        ourShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
         // view/projection transformations
-        projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        view = camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
         // world transformation
-        model = glm::mat4(1.0f);        
-        model = glm::scale(model, glm::vec3(0.2f)); // lo desaparezco por ahora
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+        if (glfwGetTime() <= 10) {
+            model = glm::translate(model, glm::vec3(10 - glfwGetTime(), 0.0f, 0.0f));
+        }           
         ourShader.setMat4("model", model);
 
-        // render the cube                
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // ------------------------------- Render triángulos tipo cero (azul obscuro)
+        // material properties        
+        ourShader.setVec3("material.diffuse", 0.043f, 0.145f, 0.271f);
+        ourShader.setVec3("material.specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("material.shininess", 32.0f);
+                
+        glBindVertexArray(VAOs[0]);        
+        glDrawArrays(GL_TRIANGLES, 0, vert_ceros.size());    
 
-        // also draw the lamp object
+        // ------------------------------- Render orillas
+        glBindVertexArray(VAOs[2]);
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(verticesOrilla));
+
+        // ------------------------------- Render triángulos tipo uno (azul claro)
+        // material properties
+        ourShader.setVec3("material.diffuse", 0.698f, 0.761f, 0.929f);
+        ourShader.setVec3("material.specular", 0.1f, 0.1f, 0.1f);
+        ourShader.setFloat("material.shininess", 16.0f);
+                
+        glBindVertexArray(VAOs[1]);
+        glDrawArrays(GL_TRIANGLES, 0, vert_unos.size());        
+
+        // also draw the lamp object(s)
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-        lightCubeShader.setMat4("model", model);
 
+        // we now draw as many light bulbs as we have point lights.
         glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            model = glm::mat4(1.0f);
+            if (glfwGetTime() < 10) {
+                model = glm::translate(model, glm::vec3(10 - glfwGetTime() - pointLightPositions[i].x, pointLightPositions[i].y, 10 - glfwGetTime() - pointLightPositions[i].z));
+            }
+            else {
+                model = glm::translate(model, pointLightPositions[i]);
+            }
+            model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+            lightCubeShader.setMat4("model", model);
+            lightCubeShader.setVec3("ourColor", pointLightColors[i]);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         // glfw: swap buffers
         glfwSwapBuffers(window);
@@ -619,16 +681,22 @@ void processInput(GLFWwindow* window)
     
     // Mover la lámpara
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        lightPos.x += 0.01;
+        pointLightPositions[1].x += 0.01;
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        lightPos.x -= 0.01;
+        pointLightPositions[1].x -= 0.01;
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        lightPos.y += 0.01;
+        pointLightPositions[1].y += 0.01;
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        lightPos.y -= 0.01;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        circuloLampara = !circuloLampara;
+        pointLightPositions[1].y -= 0.01;
+    if (glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+        pointLightPositions[1].z += 0.01;
+    if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+        pointLightPositions[1].z -= 0.01;
 
+    int estadoNuevo = glfwGetKey(window, GLFW_KEY_SPACE);
+    if (estadoNuevo == GLFW_RELEASE && estadoAnt == GLFW_PRESS)
+        circuloLampara = !circuloLampara;
+    estadoAnt = estadoNuevo;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
