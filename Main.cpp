@@ -24,7 +24,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
-// TamaÒo de la pantalla
+// Tama√±o de la pantalla
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 1000;
 
@@ -52,14 +52,14 @@ glm::vec3 pointLightPositions[] = {
 };
 
 // #############################################################################
-// DeclaraciÛn de constantes a utilizar a lo largo de este programa
+// Declaraci√≥n de constantes a utilizar a lo largo de este programa
 const int IMAGE_SIZE_X = SCR_WIDTH;
 const int IMAGE_SIZE_Y = SCR_HEIGHT;
 const int NUM_SUBDIVISONES = 7;
 const double goldenRatio = (1 + sqrt(5)) / 2;
 const double pi = 3.1415926535897932384626433832795028841971;
 
-// Estructura que guarda la informaciÛn de los tri·ngulos a dibujar
+// Estructura que guarda la informaci√≥n de los tri√°ngulos a dibujar
 struct triangulo {
     int color;
     complex<double> A;
@@ -67,17 +67,17 @@ struct triangulo {
     complex<double> C;
 };
 
-// MÈtodo para subdividir todos los tri·ngulos de manera que el resultante sea un
+// M√©todo para subdividir todos los tri√°ngulos de manera que el resultante sea un
 // tipo de estructura como la de Penrose. Recibe una lista de apuntadores a los
-// tri·ngulos ya creados y regresa otra lista con la subdivisiÛn de los tri·ngulos.
-// PodrÌa optimizarse liberando la memoria de los tri·ngulos originales, pero no
+// tri√°ngulos ya creados y regresa otra lista con la subdivisi√≥n de los tri√°ngulos.
+// Podr√≠a optimizarse liberando la memoria de los tri√°ngulos originales, pero no
 // dio tiempo.
 list<struct triangulo*> subdividir(list<struct triangulo*> triangulos) {
     list<struct triangulo*> resultado = {};
     list<struct triangulo*> ::iterator it;
     // Iteramos sobre la lista que nos pasaron como argumento
     for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        // Subdividimos al tri·ngulo seg˙n el tipo de color que tenga
+        // Subdividimos al tri√°ngulo seg√∫n el tipo de color que tenga
         if ((*it)->color == 0) {
             complex<double> P;
             struct triangulo* t1 = (struct triangulo*)malloc(sizeof(struct triangulo));
@@ -130,7 +130,7 @@ list<struct triangulo*> subdividir(list<struct triangulo*> triangulos) {
     return resultado;
 }
 
-// Este mÈtodo no tiene una aplicaciÛn real en el cÛdigo; sin embargo, lo utilicÈ para asegurarme
+// Este m√©todo no tiene una aplicaci√≥n real en el c√≥digo; sin embargo, lo utilic√© para asegurarme
 // de que los valores que estaba generando el algoritmo fueran los correctos.
 void imprimeTriangulos(list<struct triangulo*> triangulos) {
     list<struct triangulo*> ::iterator it;
@@ -141,11 +141,31 @@ void imprimeTriangulos(list<struct triangulo*> triangulos) {
 }
 // #########################################################################################
 
-// MÈtodo principal
+// Imprime a consola el manual de usuario
+cout << "       MANUAL DE USUARIO\n";
+cout << "-------------------------------------\n";
+cout << "Para controlar la c√°mara, utilice:\n";
+cout << "   -W: adentro\n";
+cout << "   -A: izquierda\n";
+cout << "   -S: afuera\n";
+cout << "   -D: derecha\n";
+cout << "\nAlternativamente, puede mover la bola del rat√≥n hacia \narriba en lugar de W o hacia abajo en lugar de S.\n";
+
+cout << "\nPara controlar la l√°mpara, utilice:\n";
+cout << "   -Up arrow: arriba\n";
+cout << "   -Left arrow: izquierda\n";
+cout << "   -Down arrow: abajo\n";
+cout << "   -Right arrow: derecha\n";
+cout << "   -ReP√°g: adentro\n";
+cout << "   -AvP√°g: afuera\n";
+
+cout << "\nPor √∫ltimo, use Espacio para pausar la luz en movimiento.";
+
+// M√©todo principal
 int main()
 {
     // Parte para calcular lo de Penrose
-    // Empezamos con 10 tri·ngulos alrededor del origen.
+    // Empezamos con 10 tri√°ngulos alrededor del origen.
     list<struct triangulo*> triangulos = {};
     complex<double> A(0, 0);
 
@@ -166,12 +186,12 @@ int main()
         // printf("(%.10f, %.10f)\n", t->C.real(), t->C.imag());
     }
 
-    // Subdividimos los tri·ngulos las veces que indice la constante NUM_SUBDIVISIONES.
+    // Subdividimos los tri√°ngulos las veces que indice la constante NUM_SUBDIVISIONES.
     for (int j = 0; j < NUM_SUBDIVISONES; j++) {
         triangulos = subdividir(triangulos);
     }
 
-    // Guardamos los tri·ngulos en formato de vÈrtices para OpenGL.
+    // Guardamos los tri√°ngulos en formato de v√©rtices para OpenGL.
     list<struct triangulo*> ::iterator it;
     vector<float> vert_ceros;
     vector<float> vert_unos;    
@@ -289,7 +309,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // glfw creaciÛn de la ventana
+    // glfw creaci√≥n de la ventana
     // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Proyecto 2", NULL, NULL);
     if (window == NULL)
@@ -370,7 +390,7 @@ int main()
     };
 
     float verticesOrilla[] = {
-         // VÈrtices                            // Vector normal
+         // V√©rtices                            // Vector normal
          0.9510565163,  0.3090169944,  0.5,     1.0,            0.0,            0.0, //A
          0.9510565163,  0.3090169944, -0.5,     1.0,            0.0,            0.0, //B
          0.9510565163, -0.3090169944,  0.5,     1.0,            0.0,            0.0, //C
@@ -445,7 +465,7 @@ int main()
     unsigned int VBOs[3], VAOs[3];
     glGenVertexArrays(3, VAOs); 
     glGenBuffers(3, VBOs);    
-    // Tri·ngulos tipo cero de la teselaciÛn
+    // Tri√°ngulos tipo cero de la teselaci√≥n
     // --------------------
     glBindVertexArray(VAOs[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
@@ -454,7 +474,7 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Tri·ngulos tipo uno de la teselaciÛn
+    // Tri√°ngulos tipo uno de la teselaci√≥n
     // ---------------------
     glBindVertexArray(VAOs[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
@@ -463,7 +483,7 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Orilas de la teselaciÛn
+    // Orilas de la teselaci√≥n
     glBindVertexArray(VAOs[2]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[2]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verticesOrilla), verticesOrilla, GL_STATIC_DRAW);
@@ -495,7 +515,7 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Para dibujar ˙nicamente los bordes
+    // Para dibujar √∫nicamente los bordes
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (!glfwWindowShouldClose(window)) {
@@ -523,7 +543,7 @@ int main()
             pointLightPositions[0].z = r * sin(t) * cos(c * t);
         }        
         
-        // Pasar la ubicaciÛn de la luz y de dÛnde se est· viendo
+        // Pasar la ubicaci√≥n de la luz y de d√≥nde se est√° viendo
         ourShader.use();                   
         // ourShader.setVec3("light.position", lightPos);
         ourShader.setVec3("viewPos", camera.Position);        
@@ -603,7 +623,7 @@ int main()
         }           
         ourShader.setMat4("model", model);
 
-        // ------------------------------- Render tri·ngulos tipo cero (azul obscuro)
+        // ------------------------------- Render tri√°ngulos tipo cero (azul obscuro)
         // material properties        
         ourShader.setVec3("material.diffuse", 0.043f, 0.145f, 0.271f);
         ourShader.setVec3("material.specular", 1.0f, 1.0f, 1.0f);
@@ -616,7 +636,7 @@ int main()
         glBindVertexArray(VAOs[2]);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(verticesOrilla));
 
-        // ------------------------------- Render tri·ngulos tipo uno (azul claro)
+        // ------------------------------- Render tri√°ngulos tipo uno (azul claro)
         // material properties
         ourShader.setVec3("material.diffuse", 0.698f, 0.761f, 0.929f);
         ourShader.setVec3("material.specular", 0.1f, 0.1f, 0.1f);
@@ -679,7 +699,7 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     
-    // Mover la l·mpara
+    // Mover la l√°mpara
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
         pointLightPositions[1].x += 0.01;
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
