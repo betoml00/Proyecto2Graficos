@@ -141,26 +141,6 @@ void imprimeTriangulos(list<struct triangulo*> triangulos) {
 }
 // #########################################################################################
 
-// Imprime a consola el manual de usuario
-cout << "       MANUAL DE USUARIO\n";
-cout << "-------------------------------------\n";
-cout << "Para controlar la cámara, utilice:\n";
-cout << "   -W: adentro\n";
-cout << "   -A: izquierda\n";
-cout << "   -S: afuera\n";
-cout << "   -D: derecha\n";
-cout << "\nAlternativamente, puede mover la bola del ratón hacia \narriba en lugar de W o hacia abajo en lugar de S.\n";
-
-cout << "\nPara controlar la lámpara, utilice:\n";
-cout << "   -Up arrow: arriba\n";
-cout << "   -Left arrow: izquierda\n";
-cout << "   -Down arrow: abajo\n";
-cout << "   -Right arrow: derecha\n";
-cout << "   -RePág: adentro\n";
-cout << "   -AvPág: afuera\n";
-
-cout << "\nPor último, use Espacio para pausar la luz en movimiento.";
-
 // Método principal
 int main()
 {
@@ -299,6 +279,26 @@ int main()
     }
     // #######################################################################################
 
+    // Imprime a consola el manual de usuario
+    cout << "       MANUAL DE USUARIO\n";
+    cout << "-------------------------------------\n";
+    cout << "Para controlar la cámara, utilice:\n";
+    cout << "   -W: adentro\n";
+    cout << "   -A: izquierda\n";
+    cout << "   -S: afuera\n";
+    cout << "   -D: derecha\n";
+    cout << "\nAlternativamente, puede mover la bola del ratón hacia \narriba en lugar de W o hacia abajo en lugar de S.\n";
+
+    cout << "\nPara controlar la lámpara, utilice:\n";
+    cout << "   -Up arrow: arriba\n";
+    cout << "   -Left arrow: izquierda\n";
+    cout << "   -Down arrow: abajo\n";
+    cout << "   -Right arrow: derecha\n";
+    cout << "   -RePág: adentro\n";
+    cout << "   -AvPág: afuera\n";
+
+    cout << "\nPor último, use Espacio para pausar la luz en movimiento.";
+    
     // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
