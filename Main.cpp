@@ -335,6 +335,9 @@ int main()
         return -1;
     }    
 
+    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+    stbi_set_flip_vertically_on_load(true);
+
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
@@ -346,6 +349,7 @@ int main()
     Shader ourShader("shaders/proyecto2.vs", "shaders/proyecto2.fs");
     Shader lightCubeShader("shaders/light_cube.vs", "shaders/light_cube.fs");
     Shader shader_blend("shaders/blending.vs", "shaders/blending.fs");
+    Shader mochilaShader("shaders/multiple_lights.vs", "shaders/multiple_lights.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -529,6 +533,10 @@ int main()
         1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
+    // load models
+    // -----------
+    Model ourModel("texturas/backpack/backpack.obj");
+
     unsigned int VBOs[3], VAOs[3];
     glGenVertexArrays(3, VAOs); 
     glGenBuffers(3, VBOs);    
@@ -656,7 +664,7 @@ int main()
             float t = sin(0.1 * glfwGetTime()) * (pi / 2) + (pi / 2);
             float r = 2;
 
-            pointLightPositions[0].x = r * sin(t) * sin(c * t);
+            pointLightPositions[0].x = r * sin(t) * sin(c * t) + 10;
             pointLightPositions[0].y = r * cos(t);
             pointLightPositions[0].z = r * sin(t) * cos(c * t);
         }        
@@ -737,8 +745,11 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
         if (glfwGetTime() <= 10) {
-            model = glm::translate(model, glm::vec3(10 - glfwGetTime(), 0.0f, 0.0f));
-        }           
+            model = glm::translate(model, glm::vec3(0.0f, glfwGetTime() - 9, -10.0));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
+        }
         ourShader.setMat4("model", model);
 
         // ------------------------------- Render triángulos tipo cero (azul obscuro)
@@ -767,14 +778,13 @@ int main()
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
-
+        model = glm::mat4(1.0f);
         // we now draw as many light bulbs as we have point lights.
         glBindVertexArray(lightCubeVAO);
-        for (unsigned int i = 0; i < 4; i++)
-        {
+        for (unsigned int i = 0; i < 4; i++) {
             model = glm::mat4(1.0f);
             if (glfwGetTime() < 10) {
-                model = glm::translate(model, glm::vec3(10 - glfwGetTime() - pointLightPositions[i].x, pointLightPositions[i].y, 10 - glfwGetTime() - pointLightPositions[i].z));
+                model = glm::translate(model, glm::vec3(pointLightPositions[i].x, glfwGetTime() - pointLightPositions[i].y - 10.0, pointLightPositions[i].z));
             }
             else {
                 model = glm::translate(model, pointLightPositions[i]);
@@ -783,23 +793,15 @@ int main()
             lightCubeShader.setMat4("model", model);
             lightCubeShader.setVec3("ourColor", pointLightColors[i]);
             glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        }        
 
         // OBJETOS TRASLÚCIDOS
         // sort the transparent windows before rendering
-        // ---------------------------------------------
         std::map<float, glm::vec3> sorted;
-        for (unsigned int i = 0; i < windows.size(); i++)
-        {
+        for (unsigned int i = 0; i < windows.size(); i++) {
             float distance = glm::length(camera.Position - windows[i]);
             sorted[distance] = windows[i];
-        }
-
-        // render
-        // ------
-        //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        }        
         // draw objects
         shader_blend.use();        
         shader_blend.setMat4("projection", projection);
@@ -819,6 +821,8 @@ int main()
         glBindVertexArray(planeVAO);
         glBindTexture(GL_TEXTURE_2D, floorTexture);
         model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -5.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(5.0f, 5.0f, 5.0f));
         shader_blend.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // windows (from furthest to nearest)
@@ -832,6 +836,69 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
+        mochilaShader.use();
+        mochilaShader.setVec3("viewPos", camera.Position);
+        // directional light
+        mochilaShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        mochilaShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
+        mochilaShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
+        mochilaShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        // point light 1
+        mochilaShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+        mochilaShader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
+        mochilaShader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+        mochilaShader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+        mochilaShader.setFloat("pointLights[0].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[0].linear", 0.09);
+        mochilaShader.setFloat("pointLights[0].quadratic", 0.032);
+        // point light 2
+        mochilaShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+        mochilaShader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
+        mochilaShader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+        mochilaShader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+        mochilaShader.setFloat("pointLights[1].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[1].linear", 0.09);
+        mochilaShader.setFloat("pointLights[1].quadratic", 0.032);
+        // point light 3
+        mochilaShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+        mochilaShader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
+        mochilaShader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+        mochilaShader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+        mochilaShader.setFloat("pointLights[2].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[2].linear", 0.09);
+        mochilaShader.setFloat("pointLights[2].quadratic", 0.032);
+        // point light 4
+        mochilaShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+        mochilaShader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
+        mochilaShader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+        mochilaShader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+        mochilaShader.setFloat("pointLights[3].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[3].linear", 0.09);
+        mochilaShader.setFloat("pointLights[3].quadratic", 0.032);
+        // spotLight
+        mochilaShader.setVec3("spotLight.position", camera.Position);
+        mochilaShader.setVec3("spotLight.direction", camera.Front);
+        mochilaShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+        mochilaShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+        mochilaShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        mochilaShader.setFloat("spotLight.constant", 1.0f);
+        mochilaShader.setFloat("spotLight.linear", 0.09);
+        mochilaShader.setFloat("spotLight.quadratic", 0.032);
+        mochilaShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+        mochilaShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+        mochilaShader.setFloat("material.shininess", 32.0f);
+
+        // LA MOCHILA
+        // No sé si la quiero dejar, solamente es una prueba        
+        mochilaShader.setMat4("projection", projection);
+        mochilaShader.setMat4("view", view);
+        // render the loaded model
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(10.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        mochilaShader.setMat4("model", model);
+        ourModel.Draw(mochilaShader);
 
         // glfw: swap buffers
         glfwSwapBuffers(window);
