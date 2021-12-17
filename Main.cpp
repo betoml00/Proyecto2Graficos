@@ -24,35 +24,42 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
+void iluminacion(Shader& shader);
 
 // Tamaño de la pantalla
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 1000;
 
-// camera
+// CÁMARA
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 
-// timing
+// TIEMPO
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
-// lighting
+// ILUMINACIÓN
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 bool circuloLampara = true;
 int estadoAnt = GLFW_RELEASE;
-// positions of the point lights
+// posiciones de las lámparas
 glm::vec3 pointLightPositions[] = {
     glm::vec3(0.7f,  0.2f,  2.0f),
     glm::vec3(2.3f, -3.3f, -4.0f),
     glm::vec3(-4.0f,  2.0f, -12.0f),
     glm::vec3(0.0f,  0.0f, -3.0f)
 };
+// colores de las lámparas
+glm::vec3 pointLightColors[] = {
+    glm::vec3(236.0 / 255.0, 239.0 / 255.0, 248.0 / 255.0),
+    glm::vec3(157.0 / 255.0, 190.0 / 255.0, 212.0 / 255.0),
+    glm::vec3(209.0 / 255.0, 216.0 / 255.0, 226.0 / 255.0),
+    glm::vec3(79.0 / 255.0, 156.0 / 255.0, 200.0 / 255.0)
+};
 
-// #############################################################################
 // Declaración de constantes a utilizar a lo largo de este programa
 const int IMAGE_SIZE_X = SCR_WIDTH;
 const int IMAGE_SIZE_Y = SCR_HEIGHT;
@@ -71,8 +78,6 @@ struct triangulo {
 // Método para subdividir todos los triángulos de manera que el resultante sea un
 // tipo de estructura como la de Penrose. Recibe una lista de apuntadores a los
 // triángulos ya creados y regresa otra lista con la subdivisión de los triángulos.
-// Podría optimizarse liberando la memoria de los triángulos originales, pero no
-// dio tiempo.
 list<struct triangulo*> subdividir(list<struct triangulo*> triangulos) {
     list<struct triangulo*> resultado = {};
     list<struct triangulo*> ::iterator it;
@@ -131,22 +136,9 @@ list<struct triangulo*> subdividir(list<struct triangulo*> triangulos) {
     return resultado;
 }
 
-// Este método no tiene una aplicación real en el código; sin embargo, lo utilicé para asegurarme
-// de que los valores que estaba generando el algoritmo fueran los correctos.
-void imprimeTriangulos(list<struct triangulo*> triangulos) {
-    list<struct triangulo*> ::iterator it;
-    for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        printf("%f, %f, 0.0 \n%f, %f, 0.0 \n%f, %f, 0.0\n", (*it)->A.real(), (*it)->A.imag(),
-            (*it)->B.real(), (*it)->B.imag(), (*it)->C.real(), (*it)->C.imag());
-    }
-}
-// #########################################################################################
-
-// Método principal
 int main()
 {
-    // Parte para calcular lo de Penrose
-    // Empezamos con 10 triángulos alrededor del origen.
+    // #########################################################################################  TESELACIÓN DE PENROSE    
     list<struct triangulo*> triangulos = {};
     complex<double> A(0, 0);
 
@@ -162,12 +154,9 @@ int main()
             t->C = aux;
         }
         triangulos.push_back(t);        
-        // Para imprimir las orillas. Lo dejo por cualquier cosa.
-        // printf("(%.10f, %.10f)\n", t->B.real(), t->B.imag());        
-        // printf("(%.10f, %.10f)\n", t->C.real(), t->C.imag());
     }
 
-    // Subdividimos los triángulos las veces que indice la constante NUM_SUBDIVISIONES.
+    // Subdividimos los triángulos las veces que indique la constante NUM_SUBDIVISIONES.
     for (int j = 0; j < NUM_SUBDIVISONES; j++) {
         triangulos = subdividir(triangulos);
     }
@@ -177,110 +166,43 @@ int main()
     vector<float> vert_ceros;
     vector<float> vert_unos;    
     for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        if ((*it)->color == 0) {            
-            vert_ceros.push_back((float)(*it)->A.real());
-            vert_ceros.push_back((float)(*it)->A.imag());
-            vert_ceros.push_back(0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(1.0f);
+        if ((*it)->color == 0) {    
+            // Parte delantera
+            vert_ceros.push_back((float)(*it)->A.real()); vert_ceros.push_back((float)(*it)->A.imag()); vert_ceros.push_back(0.5f); // Posición            
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->B.real()); vert_ceros.push_back((float)(*it)->B.imag()); vert_ceros.push_back(0.5f); // Posición           
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->C.real()); vert_ceros.push_back((float)(*it)->C.imag()); vert_ceros.push_back(0.5f); // Posición           
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(1.0f);                                     // Vector normal
 
-            vert_ceros.push_back((float)(*it)->B.real());
-            vert_ceros.push_back((float)(*it)->B.imag());
-            vert_ceros.push_back(0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(1.0f);
-
-            vert_ceros.push_back((float)(*it)->C.real());
-            vert_ceros.push_back((float)(*it)->C.imag());
-            vert_ceros.push_back(0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);            
-            vert_ceros.push_back(1.0f);
-
-            //------------- Parte 2
-            vert_ceros.push_back((float)(*it)->A.real());
-            vert_ceros.push_back((float)(*it)->A.imag());
-            vert_ceros.push_back(-0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(-1.0f);
-
-            vert_ceros.push_back((float)(*it)->B.real());
-            vert_ceros.push_back((float)(*it)->B.imag());
-            vert_ceros.push_back(-0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(-1.0f);
-
-            vert_ceros.push_back((float)(*it)->C.real());
-            vert_ceros.push_back((float)(*it)->C.imag());
-            vert_ceros.push_back(-0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);            
-            vert_ceros.push_back(-1.0f);
+            // Parte trasera
+            vert_ceros.push_back((float)(*it)->A.real()); vert_ceros.push_back((float)(*it)->A.imag()); vert_ceros.push_back(-0.5f); // Posición           
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(-1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->B.real()); vert_ceros.push_back((float)(*it)->B.imag()); vert_ceros.push_back(-0.5f); // Posición            
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(-1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->C.real()); vert_ceros.push_back((float)(*it)->C.imag()); vert_ceros.push_back(-0.5f); // Posición
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(-1.0f);                                     // Vector normal
         }
         else {            
-            vert_unos.push_back((float)(*it)->A.real());
-            vert_unos.push_back((float)(*it)->A.imag());            
-            vert_unos.push_back(0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(1.0f);
+            // Parte delantera
+            vert_unos.push_back((float)(*it)->A.real()); vert_unos.push_back((float)(*it)->A.imag()); vert_unos.push_back(0.5f); // Posición            
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->B.real()); vert_unos.push_back((float)(*it)->B.imag()); vert_unos.push_back(0.5f); // Posición           
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->C.real()); vert_unos.push_back((float)(*it)->C.imag()); vert_unos.push_back(0.5f); // Posición           
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(1.0f);                                     // Vector normal
 
-            vert_unos.push_back((float)(*it)->B.real());
-            vert_unos.push_back((float)(*it)->B.imag());            
-            vert_unos.push_back(0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(1.0f);
-
-            vert_unos.push_back((float)(*it)->C.real());
-            vert_unos.push_back((float)(*it)->C.imag());            
-            vert_unos.push_back(0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(1.0f);
-
-            // Parte 2
-            vert_unos.push_back((float)(*it)->A.real());
-            vert_unos.push_back((float)(*it)->A.imag());
-            vert_unos.push_back(-0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(-1.0f);
-
-            vert_unos.push_back((float)(*it)->B.real());
-            vert_unos.push_back((float)(*it)->B.imag());
-            vert_unos.push_back(-0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(-1.0f);
-
-            vert_unos.push_back((float)(*it)->C.real());
-            vert_unos.push_back((float)(*it)->C.imag());
-            vert_unos.push_back(-0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);            
-            vert_unos.push_back(-1.0f);
+            // Parte trasera
+            vert_unos.push_back((float)(*it)->A.real()); vert_unos.push_back((float)(*it)->A.imag()); vert_unos.push_back(-0.5f); // Posición           
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(-1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->B.real()); vert_unos.push_back((float)(*it)->B.imag()); vert_unos.push_back(-0.5f); // Posición            
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(-1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->C.real()); vert_unos.push_back((float)(*it)->C.imag()); vert_unos.push_back(-0.5f); // Posición
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(-1.0f);                                     // Vector normal
         }
-    }
-    // #######################################################################################
+    }    
 
-    // Imprime a consola el manual de usuario
+    // #########################################################################################  MENÚ DE USUARIO
     cout << "       MANUAL DE USUARIO\n";
     cout << "-------------------------------------\n";
     cout << "Para controlar la cámara, utilice:\n";
@@ -299,8 +221,7 @@ int main()
     cout << "   -AvPág: afuera\n";
 
     cout << "\nPor último, use Espacio para pausar la luz en movimiento.";
-    
-    // ------------------------------
+       
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -310,11 +231,9 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // glfw creación de la ventana
-    // --------------------
+    // GLFW: creación de la ventana  
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Proyecto 2", NULL, NULL);
-    if (window == NULL)
-    {
+    if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
@@ -322,30 +241,23 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-
-    // tell GLFW to capture our mouse
+    glfwSetScrollCallback(window, scroll_callback);    
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
+    
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }    
 
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+    // voltear la textura en el eje-y antes de cargar el modelo
     stbi_set_flip_vertically_on_load(true);
-
-    // configure global opengl state
-    // -----------------------------
+    
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // construimos y compilamos los shaders
-    // ------------------------------------
+    // construimos y compilamos los shaders    
     Shader ourShader("shaders/proyecto2.vs", "shaders/proyecto2.fs");
     Shader lightCubeShader("shaders/light_cube.vs", "shaders/light_cube.fs");
     Shader shader_blend("shaders/blending.vs", "shaders/blending.fs");
@@ -533,15 +445,14 @@ int main()
         1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
-    // load models
-    // -----------
+    // load model  
     Model ourModel("texturas/backpack/backpack.obj");
 
+    // #########################################################################################  VAOs y VBOs
     unsigned int VBOs[3], VAOs[3];
     glGenVertexArrays(3, VAOs); 
     glGenBuffers(3, VBOs);    
-    // Triángulos tipo cero de la teselación
-    // --------------------
+    // Triángulos tipo cero de la teselación    
     glBindVertexArray(VAOs[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
     glBufferData(GL_ARRAY_BUFFER, vert_ceros.size() * sizeof(float), &vert_ceros[0], GL_STATIC_DRAW);
@@ -549,8 +460,7 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Triángulos tipo uno de la teselación
-    // ---------------------
+    // Triángulos tipo uno de la teselación    
     glBindVertexArray(VAOs[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
     glBufferData(GL_ARRAY_BUFFER, vert_unos.size() * sizeof(float), &vert_unos[0], GL_STATIC_DRAW);
@@ -626,17 +536,13 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
-    // load textures
-    // -------------
+    // load textures    
     unsigned int cubeTexture = loadTexture("texturas/marble.jpg");
     unsigned int floorTexture = loadTexture("texturas/metal.png");
     unsigned int transparentTexture = loadTexture("texturas/window.png");
 
-
-    // transparent window locations
-    // --------------------------------
-    vector<glm::vec3> windows
-    {
+    // transparent window locations    
+    vector<glm::vec3> windows {
         glm::vec3(-1.5f, 0.0f, -0.48f),
         glm::vec3(1.5f, 0.0f, 0.51f),
         glm::vec3(0.0f, 0.0f, 0.7f),
@@ -645,20 +551,17 @@ int main()
     };
 
     while (!glfwWindowShouldClose(window)) {
-        // per-frame time logic
-        // --------------------
+        // per-frame time logic        
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         processInput(window);                                
-
-        //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        
         glClearColor(185.0 / 255.0, 200.0 / 255.0, 215.0 / 255.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // change the light's position values over time (can be done anywhere in the render loop actually, but try to do it at least before using the light source positions)
-        // Mover la luz en una esfera - https://en.wikipedia.org/wiki/Spiral#Spherical_spirals
+        
+        // Mover la luz en una esfera
         if (circuloLampara) {
             float c = 18.0;
             float t = sin(0.1 * glfwGetTime()) * (pi / 2) + (pi / 2);
@@ -668,72 +571,10 @@ int main()
             pointLightPositions[0].y = r * cos(t);
             pointLightPositions[0].z = r * sin(t) * cos(c * t);
         }        
-        
-        // Pasar la ubicación de la luz y de dónde se está viendo
-        ourShader.use();                   
-        // ourShader.setVec3("light.position", lightPos);
+                
+        ourShader.use();                           
         ourShader.setVec3("viewPos", camera.Position);        
-
-        /*
-           Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
-           the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
-           by defining light types as classes and set their values in there, or by using a more efficient uniform approach
-           by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
-        */
-        glm::vec3 pointLightColors[] = {
-            glm::vec3(236.0/255.0, 239.0 / 255.0, 248.0 / 255.0),
-            glm::vec3(157.0 / 255.0, 190.0 / 255.0, 212.0 / 255.0),
-            glm::vec3(209.0 / 255.0, 216.0 / 255.0, 226.0 / 255.0),            
-            glm::vec3(79.0 / 255.0, 156.0 / 255.0, 200.0 / 255.0)
-        };
-        // directional light
-        ourShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        ourShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
-        ourShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
-        ourShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        // point light 1
-        ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-        ourShader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
-        ourShader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
-        ourShader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
-        ourShader.setFloat("pointLights[0].constant", 1.0f);
-        ourShader.setFloat("pointLights[0].linear", 0.09);
-        ourShader.setFloat("pointLights[0].quadratic", 0.032);
-        // point light 2
-        ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-        ourShader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
-        ourShader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
-        ourShader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
-        ourShader.setFloat("pointLights[1].constant", 1.0f);
-        ourShader.setFloat("pointLights[1].linear", 0.09);
-        ourShader.setFloat("pointLights[1].quadratic", 0.032);
-        // point light 3
-        ourShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-        ourShader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
-        ourShader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
-        ourShader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
-        ourShader.setFloat("pointLights[2].constant", 1.0f);
-        ourShader.setFloat("pointLights[2].linear", 0.09);
-        ourShader.setFloat("pointLights[2].quadratic", 0.032);
-        // point light 4
-        ourShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-        ourShader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
-        ourShader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
-        ourShader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
-        ourShader.setFloat("pointLights[3].constant", 1.0f);
-        ourShader.setFloat("pointLights[3].linear", 0.09);
-        ourShader.setFloat("pointLights[3].quadratic", 0.032);
-        // spotLight
-        ourShader.setVec3("spotLight.position", camera.Position);
-        ourShader.setVec3("spotLight.direction", camera.Front);
-        ourShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-        ourShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-        ourShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-        ourShader.setFloat("spotLight.constant", 1.0f);
-        ourShader.setFloat("spotLight.linear", 0.09);
-        ourShader.setFloat("spotLight.quadratic", 0.032);
-        ourShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-        ourShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+        iluminacion(ourShader);
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -744,16 +585,17 @@ int main()
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
-        if (glfwGetTime() <= 10) {
+        /*if (glfwGetTime() <= 10) {
             model = glm::translate(model, glm::vec3(0.0f, glfwGetTime() - 9, -10.0));
         }
         else {
             model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
-        }
+        }*/
+        model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
         ourShader.setMat4("model", model);
 
-        // ------------------------------- Render triángulos tipo cero (azul obscuro)
-        // material properties        
+        // #########################################################################################  RENDER TESELACIÓN
+        // ------------------------------- Render triángulos tipo cero (azul obscuro)                
         ourShader.setVec3("material.diffuse", 0.043f, 0.145f, 0.271f);
         ourShader.setVec3("material.specular", 1.0f, 1.0f, 1.0f);
         ourShader.setFloat("material.shininess", 32.0f);
@@ -765,8 +607,7 @@ int main()
         glBindVertexArray(VAOs[2]);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(verticesOrilla));
 
-        // ------------------------------- Render triángulos tipo uno (azul claro)
-        // material properties
+        // ------------------------------- Render triángulos tipo uno (azul claro)        
         ourShader.setVec3("material.diffuse", 0.698f, 0.761f, 0.929f);
         ourShader.setVec3("material.specular", 0.1f, 0.1f, 0.1f);
         ourShader.setFloat("material.shininess", 16.0f);
@@ -774,12 +615,11 @@ int main()
         glBindVertexArray(VAOs[1]);
         glDrawArrays(GL_TRIANGLES, 0, vert_unos.size());        
 
-        // also draw the lamp object(s)
+        // #########################################################################################  RENDER DE LAS LÁMPARAS
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        // we now draw as many light bulbs as we have point lights.
+        model = glm::mat4(1.0f);        
         glBindVertexArray(lightCubeVAO);
         for (unsigned int i = 0; i < 4; i++) {
             model = glm::mat4(1.0f);
@@ -795,14 +635,14 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }        
 
-        // OBJETOS TRASLÚCIDOS
-        // sort the transparent windows before rendering
+        // #########################################################################################  OBJETOS TRASLÚCIDOS
+        // ordenar los objetos antes de renderizarlos
         std::map<float, glm::vec3> sorted;
         for (unsigned int i = 0; i < windows.size(); i++) {
             float distance = glm::length(camera.Position - windows[i]);
             sorted[distance] = windows[i];
         }        
-        // draw objects
+        // render objetos
         shader_blend.use();        
         shader_blend.setMat4("projection", projection);
         shader_blend.setMat4("view", view);
@@ -836,61 +676,11 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
-        mochilaShader.use();
-        mochilaShader.setVec3("viewPos", camera.Position);
-        // directional light
-        mochilaShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        mochilaShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
-        mochilaShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
-        mochilaShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        // point light 1
-        mochilaShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-        mochilaShader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
-        mochilaShader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
-        mochilaShader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
-        mochilaShader.setFloat("pointLights[0].constant", 1.0f);
-        mochilaShader.setFloat("pointLights[0].linear", 0.09);
-        mochilaShader.setFloat("pointLights[0].quadratic", 0.032);
-        // point light 2
-        mochilaShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-        mochilaShader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
-        mochilaShader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
-        mochilaShader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
-        mochilaShader.setFloat("pointLights[1].constant", 1.0f);
-        mochilaShader.setFloat("pointLights[1].linear", 0.09);
-        mochilaShader.setFloat("pointLights[1].quadratic", 0.032);
-        // point light 3
-        mochilaShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-        mochilaShader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
-        mochilaShader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
-        mochilaShader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
-        mochilaShader.setFloat("pointLights[2].constant", 1.0f);
-        mochilaShader.setFloat("pointLights[2].linear", 0.09);
-        mochilaShader.setFloat("pointLights[2].quadratic", 0.032);
-        // point light 4
-        mochilaShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-        mochilaShader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
-        mochilaShader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
-        mochilaShader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
-        mochilaShader.setFloat("pointLights[3].constant", 1.0f);
-        mochilaShader.setFloat("pointLights[3].linear", 0.09);
-        mochilaShader.setFloat("pointLights[3].quadratic", 0.032);
-        // spotLight
-        mochilaShader.setVec3("spotLight.position", camera.Position);
-        mochilaShader.setVec3("spotLight.direction", camera.Front);
-        mochilaShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-        mochilaShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-        mochilaShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-        mochilaShader.setFloat("spotLight.constant", 1.0f);
-        mochilaShader.setFloat("spotLight.linear", 0.09);
-        mochilaShader.setFloat("spotLight.quadratic", 0.032);
-        mochilaShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-        mochilaShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-
+        mochilaShader.use();        
         mochilaShader.setFloat("material.shininess", 32.0f);
+        iluminacion(mochilaShader);
 
-        // LA MOCHILA
-        // No sé si la quiero dejar, solamente es una prueba        
+        // LA MOCHILA        
         mochilaShader.setMat4("projection", projection);
         mochilaShader.setMat4("view", view);
         // render the loaded model
@@ -916,10 +706,61 @@ int main()
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window)
-{
+// Método para pasarle las características de la iluminación a un shader.
+void iluminacion(Shader &shader) {    
+    shader.setVec3("viewPos", camera.Position);
+    // directional light
+    shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+    shader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
+    shader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
+    shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+    // point light 1
+    shader.setVec3("pointLights[0].position", pointLightPositions[0]);
+    shader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
+    shader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+    shader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+    shader.setFloat("pointLights[0].constant", 1.0f);
+    shader.setFloat("pointLights[0].linear", 0.09);
+    shader.setFloat("pointLights[0].quadratic", 0.032);
+    // point light 2
+    shader.setVec3("pointLights[1].position", pointLightPositions[1]);
+    shader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
+    shader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+    shader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+    shader.setFloat("pointLights[1].constant", 1.0f);
+    shader.setFloat("pointLights[1].linear", 0.09);
+    shader.setFloat("pointLights[1].quadratic", 0.032);
+    // point light 3
+    shader.setVec3("pointLights[2].position", pointLightPositions[2]);
+    shader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
+    shader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+    shader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+    shader.setFloat("pointLights[2].constant", 1.0f);
+    shader.setFloat("pointLights[2].linear", 0.09);
+    shader.setFloat("pointLights[2].quadratic", 0.032);
+    // point light 4
+    shader.setVec3("pointLights[3].position", pointLightPositions[3]);
+    shader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
+    shader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+    shader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+    shader.setFloat("pointLights[3].constant", 1.0f);
+    shader.setFloat("pointLights[3].linear", 0.09);
+    shader.setFloat("pointLights[3].quadratic", 0.032);
+    // spotLight
+    shader.setVec3("spotLight.position", camera.Position);
+    shader.setVec3("spotLight.direction", camera.Front);
+    shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+    shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+    shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+    shader.setFloat("spotLight.constant", 1.0f);
+    shader.setFloat("spotLight.linear", 0.09);
+    shader.setFloat("spotLight.quadratic", 0.032);
+    shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+    shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+}
+
+// GFLW: input del usuario
+void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
@@ -946,16 +787,15 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
         pointLightPositions[1].z -= 0.01;
 
+    // Para detectar cuándo hay que mover la lámpara y cuándo no
     int estadoNuevo = glfwGetKey(window, GLFW_KEY_SPACE);
     if (estadoNuevo == GLFW_RELEASE && estadoAnt == GLFW_PRESS)
         circuloLampara = !circuloLampara;
     estadoAnt = estadoNuevo;
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+// GLFW: cambio del tamaño de la ventana
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     if (width >= height) {
         glViewport(0, 0, width, width);
     }
@@ -964,8 +804,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     }
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
+// GLFW: movimiento del mouse
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
@@ -984,15 +823,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
+// GLFW: para detectar el scroll del mouse
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
 }
 
-// utility function for loading a 2D texture from file
-// ---------------------------------------------------
+// Función para cargar una textura en 2D
 unsigned int loadTexture(char const* path)
 {
     unsigned int textureID;
@@ -1014,7 +851,7 @@ unsigned int loadTexture(char const* path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
