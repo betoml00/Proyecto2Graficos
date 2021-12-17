@@ -8,7 +8,7 @@
 
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
-
+#include <learnopengl/model.h>
 
 #include <iostream>
 
@@ -23,6 +23,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+unsigned int loadTexture(const char* path);
 
 // Tamaño de la pantalla
 const unsigned int SCR_WIDTH = 1000;
@@ -334,14 +335,21 @@ int main()
         return -1;
     }    
 
+    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+    stbi_set_flip_vertically_on_load(true);
+
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // construimos y compilamos los shaders
     // ------------------------------------
     Shader ourShader("shaders/proyecto2.vs", "shaders/proyecto2.fs");
     Shader lightCubeShader("shaders/light_cube.vs", "shaders/light_cube.fs");
+    Shader shader_blend("shaders/blending.vs", "shaders/blending.fs");
+    Shader mochilaShader("shaders/multiple_lights.vs", "shaders/multiple_lights.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -388,7 +396,6 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
-
     float verticesOrilla[] = {
          // Vértices                            // Vector normal
          0.9510565163,  0.3090169944,  0.5,     1.0,            0.0,            0.0, //A
@@ -461,6 +468,74 @@ int main()
          0.5877852523, -0.8090169944,  0.5,    0.809016994375, -0.587785252292, 0.0, //S
          0.5877852523, -0.8090169944, -0.5,    0.809016994375, -0.587785252292, 0.0  //T
     };
+    float cubeVertices[] = {
+        // positions          // texture Coords
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+    float planeVertices[] = {
+        // positions          // texture Coords 
+         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+        -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+
+         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+         5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+    };
+    float transparentVertices[] = {
+        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+        1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    // load models
+    // -----------
+    Model ourModel("texturas/backpack/backpack.obj");
 
     unsigned int VBOs[3], VAOs[3];
     glGenVertexArrays(3, VAOs); 
@@ -515,8 +590,59 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Para dibujar únicamente los bordes
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // ###### VAO's de los objetos que usan texturas
+    // cube VAO
+    unsigned int cubeBlendVAO, cubeBlendVBO;
+    glGenVertexArrays(1, &cubeBlendVAO);
+    glGenBuffers(1, &cubeBlendVBO);
+    glBindVertexArray(cubeBlendVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeBlendVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    // plane VAO
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+    glBindVertexArray(planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    // transparent VAO
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    // load textures
+    // -------------
+    unsigned int cubeTexture = loadTexture("texturas/marble.jpg");
+    unsigned int floorTexture = loadTexture("texturas/metal.png");
+    unsigned int transparentTexture = loadTexture("texturas/window.png");
+
+
+    // transparent window locations
+    // --------------------------------
+    vector<glm::vec3> windows
+    {
+        glm::vec3(-1.5f, 0.0f, -0.48f),
+        glm::vec3(1.5f, 0.0f, 0.51f),
+        glm::vec3(0.0f, 0.0f, 0.7f),
+        glm::vec3(-0.3f, 0.0f, -2.3f),
+        glm::vec3(0.5f, 0.0f, -0.6f)
+    };
 
     while (!glfwWindowShouldClose(window)) {
         // per-frame time logic
@@ -538,7 +664,7 @@ int main()
             float t = sin(0.1 * glfwGetTime()) * (pi / 2) + (pi / 2);
             float r = 2;
 
-            pointLightPositions[0].x = r * sin(t) * sin(c * t);
+            pointLightPositions[0].x = r * sin(t) * sin(c * t) + 10;
             pointLightPositions[0].y = r * cos(t);
             pointLightPositions[0].z = r * sin(t) * cos(c * t);
         }        
@@ -619,8 +745,11 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
         if (glfwGetTime() <= 10) {
-            model = glm::translate(model, glm::vec3(10 - glfwGetTime(), 0.0f, 0.0f));
-        }           
+            model = glm::translate(model, glm::vec3(0.0f, glfwGetTime() - 9, -10.0));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
+        }
         ourShader.setMat4("model", model);
 
         // ------------------------------- Render triángulos tipo cero (azul obscuro)
@@ -649,14 +778,13 @@ int main()
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
-
+        model = glm::mat4(1.0f);
         // we now draw as many light bulbs as we have point lights.
         glBindVertexArray(lightCubeVAO);
-        for (unsigned int i = 0; i < 4; i++)
-        {
+        for (unsigned int i = 0; i < 4; i++) {
             model = glm::mat4(1.0f);
             if (glfwGetTime() < 10) {
-                model = glm::translate(model, glm::vec3(10 - glfwGetTime() - pointLightPositions[i].x, pointLightPositions[i].y, 10 - glfwGetTime() - pointLightPositions[i].z));
+                model = glm::translate(model, glm::vec3(pointLightPositions[i].x, glfwGetTime() - pointLightPositions[i].y - 10.0, pointLightPositions[i].z));
             }
             else {
                 model = glm::translate(model, pointLightPositions[i]);
@@ -665,7 +793,112 @@ int main()
             lightCubeShader.setMat4("model", model);
             lightCubeShader.setVec3("ourColor", pointLightColors[i]);
             glDrawArrays(GL_TRIANGLES, 0, 36);
+        }        
+
+        // OBJETOS TRASLÚCIDOS
+        // sort the transparent windows before rendering
+        std::map<float, glm::vec3> sorted;
+        for (unsigned int i = 0; i < windows.size(); i++) {
+            float distance = glm::length(camera.Position - windows[i]);
+            sorted[distance] = windows[i];
+        }        
+        // draw objects
+        shader_blend.use();        
+        shader_blend.setMat4("projection", projection);
+        shader_blend.setMat4("view", view);
+        // cubes
+        glBindVertexArray(cubeBlendVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture);
+        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+        shader_blend.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+        shader_blend.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // floor
+        glBindVertexArray(planeVAO);
+        glBindTexture(GL_TEXTURE_2D, floorTexture);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -5.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(5.0f, 5.0f, 5.0f));
+        shader_blend.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // windows (from furthest to nearest)
+        glBindVertexArray(transparentVAO);
+        glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, it->second);
+            shader_blend.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
         }
+
+        mochilaShader.use();
+        mochilaShader.setVec3("viewPos", camera.Position);
+        // directional light
+        mochilaShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        mochilaShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
+        mochilaShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
+        mochilaShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        // point light 1
+        mochilaShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+        mochilaShader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
+        mochilaShader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+        mochilaShader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+        mochilaShader.setFloat("pointLights[0].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[0].linear", 0.09);
+        mochilaShader.setFloat("pointLights[0].quadratic", 0.032);
+        // point light 2
+        mochilaShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+        mochilaShader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
+        mochilaShader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+        mochilaShader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+        mochilaShader.setFloat("pointLights[1].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[1].linear", 0.09);
+        mochilaShader.setFloat("pointLights[1].quadratic", 0.032);
+        // point light 3
+        mochilaShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+        mochilaShader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
+        mochilaShader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+        mochilaShader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+        mochilaShader.setFloat("pointLights[2].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[2].linear", 0.09);
+        mochilaShader.setFloat("pointLights[2].quadratic", 0.032);
+        // point light 4
+        mochilaShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+        mochilaShader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
+        mochilaShader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+        mochilaShader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+        mochilaShader.setFloat("pointLights[3].constant", 1.0f);
+        mochilaShader.setFloat("pointLights[3].linear", 0.09);
+        mochilaShader.setFloat("pointLights[3].quadratic", 0.032);
+        // spotLight
+        mochilaShader.setVec3("spotLight.position", camera.Position);
+        mochilaShader.setVec3("spotLight.direction", camera.Front);
+        mochilaShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+        mochilaShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+        mochilaShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        mochilaShader.setFloat("spotLight.constant", 1.0f);
+        mochilaShader.setFloat("spotLight.linear", 0.09);
+        mochilaShader.setFloat("spotLight.quadratic", 0.032);
+        mochilaShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+        mochilaShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+        mochilaShader.setFloat("material.shininess", 32.0f);
+
+        // LA MOCHILA
+        // No sé si la quiero dejar, solamente es una prueba        
+        mochilaShader.setMat4("projection", projection);
+        mochilaShader.setMat4("view", view);
+        // render the loaded model
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(10.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        mochilaShader.setMat4("model", model);
+        ourModel.Draw(mochilaShader);
 
         // glfw: swap buffers
         glfwSwapBuffers(window);
@@ -756,4 +989,43 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
+}
+
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const* path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
