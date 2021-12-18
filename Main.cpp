@@ -36,7 +36,6 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-
 // TIEMPO
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
@@ -48,7 +47,7 @@ int estadoAnt = GLFW_RELEASE;
 // posiciones de las lámparas
 glm::vec3 pointLightPositions[] = {
     glm::vec3(0.7f,  0.2f,  2.0f),
-    glm::vec3(2.3f, -3.3f, -4.0f),
+    glm::vec3(2.3f, 1.3f, -4.0f),
     glm::vec3(-4.0f,  2.0f, -12.0f),
     glm::vec3(0.0f,  0.0f, -3.0f)
 };
@@ -261,7 +260,8 @@ int main()
     Shader ourShader("shaders/proyecto2.vs", "shaders/proyecto2.fs");
     Shader lightCubeShader("shaders/light_cube.vs", "shaders/light_cube.fs");
     Shader shader_blend("shaders/blending.vs", "shaders/blending.fs");
-    Shader mochilaShader("shaders/multiple_lights.vs", "shaders/multiple_lights.fs");
+    Shader mochilaShader("shaders/mochila.vs", "shaders/mochila.fs");
+    Shader multipleLights("shaders/multiple_lights.vs", "shaders/multiple_lights.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -381,58 +381,58 @@ int main()
          0.5877852523, -0.8090169944, -0.5,    0.809016994375, -0.587785252292, 0.0  //T
     };
     float cubeVertices[] = {
-        // positions          // texture Coords
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
     };
     float planeVertices[] = {
-        // positions          // texture Coords 
-         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+        // positions          // normal         // textura 
+         5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+        -5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
 
-         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-         5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+         5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+         5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 2.0f
     };
     float transparentVertices[] = {
         // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
@@ -505,24 +505,34 @@ int main()
     unsigned int cubeBlendVAO, cubeBlendVBO;
     glGenVertexArrays(1, &cubeBlendVAO);
     glGenBuffers(1, &cubeBlendVBO);
-    glBindVertexArray(cubeBlendVAO);
+    
     glBindBuffer(GL_ARRAY_BUFFER, cubeBlendVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    
+    glBindVertexArray(cubeBlendVAO);    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);    
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
     // plane VAO
     unsigned int planeVAO, planeVBO;
     glGenVertexArrays(1, &planeVAO);
     glGenBuffers(1, &planeVBO);
-    glBindVertexArray(planeVAO);
+    
     glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+
+    glBindVertexArray(planeVAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
     // transparent VAO
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
@@ -540,14 +550,16 @@ int main()
     unsigned int cubeTexture = loadTexture("texturas/marble.jpg");
     unsigned int floorTexture = loadTexture("texturas/metal.png");
     unsigned int transparentTexture = loadTexture("texturas/window.png");
+    unsigned int specularMap = loadTexture("texturas/container2_specular.png");
 
+    float tiempo = 20.0f;
     // transparent window locations    
     vector<glm::vec3> windows {
-        glm::vec3(-1.5f, 0.0f, -0.48f),
-        glm::vec3(1.5f, 0.0f, 0.51f),
+        glm::vec3(-4.5f, 5.0f, -0.48f),
+        glm::vec3(2.75f, 1.0f, 0.51f),
         glm::vec3(0.0f, 0.0f, 0.7f),
-        glm::vec3(-0.3f, 0.0f, -2.3f),
-        glm::vec3(0.5f, 0.0f, -0.6f)
+        glm::vec3(4.3f, 0.0f, -2.3f),
+        glm::vec3(-0.5f, 2.0f, -0.6f)
     };
 
     while (!glfwWindowShouldClose(window)) {
@@ -558,13 +570,14 @@ int main()
 
         processInput(window);                                
         
-        glClearColor(185.0 / 255.0, 200.0 / 255.0, 215.0 / 255.0, 1.0);
+        //glClearColor(185.0 / 255.0, 200.0 / 255.0, 215.0 / 255.0, 1.0);
+        glClearColor(105.0 / 255.0, 137.0 / 255.0, 172.0 / 255.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         // Mover la luz en una esfera
         if (circuloLampara) {
             float c = 18.0;
-            float t = sin(0.1 * glfwGetTime()) * (pi / 2) + (pi / 2);
+            float t = sin(0.1 * currentFrame) * (pi / 2) + (pi / 2);
             float r = 2;
 
             pointLightPositions[0].x = r * sin(t) * sin(c * t) + 10;
@@ -585,13 +598,12 @@ int main()
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
-        /*if (glfwGetTime() <= 10) {
-            model = glm::translate(model, glm::vec3(0.0f, glfwGetTime() - 9, -10.0));
+        if (currentFrame <= tiempo) {
+            model = glm::translate(model, glm::vec3(0.0f, currentFrame - tiempo - 1, -10.0));
         }
         else {
             model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
-        }*/
-        model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
+        }        
         ourShader.setMat4("model", model);
 
         // #########################################################################################  RENDER TESELACIÓN
@@ -623,8 +635,8 @@ int main()
         glBindVertexArray(lightCubeVAO);
         for (unsigned int i = 0; i < 4; i++) {
             model = glm::mat4(1.0f);
-            if (glfwGetTime() < 10) {
-                model = glm::translate(model, glm::vec3(pointLightPositions[i].x, glfwGetTime() - pointLightPositions[i].y - 10.0, pointLightPositions[i].z));
+            if (currentFrame < tiempo) {
+                model = glm::translate(model, glm::vec3(pointLightPositions[i].x, currentFrame - pointLightPositions[i].y - tiempo, pointLightPositions[i].z));
             }
             else {
                 model = glm::translate(model, pointLightPositions[i]);
@@ -635,7 +647,7 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }        
 
-        // #########################################################################################  OBJETOS TRASLÚCIDOS
+        // #########################################################################################  OBJETOS CON TEXTURA
         // ordenar los objetos antes de renderizarlos
         std::map<float, glm::vec3> sorted;
         for (unsigned int i = 0; i < windows.size(); i++) {
@@ -643,35 +655,73 @@ int main()
             sorted[distance] = windows[i];
         }        
         // render objetos
-        shader_blend.use();        
-        shader_blend.setMat4("projection", projection);
-        shader_blend.setMat4("view", view);
+        multipleLights.use();                
+        multipleLights.setInt("material.diffuse", 0);
+        multipleLights.setInt("material.specular", 1);
+        iluminacion(multipleLights);
+        multipleLights.setFloat("material.shininess", 32.0f);
+        multipleLights.setMat4("projection", projection);
+        multipleLights.setMat4("view", view);
         // cubes
         glBindVertexArray(cubeBlendVAO);
+        // bind diffuse map
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cubeTexture);
-        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-        shader_blend.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // bind specular map
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        shader_blend.setMat4("model", model);
+        if (currentFrame < tiempo) {
+            model = glm::translate(model, glm::vec3(-1.0f, currentFrame - tiempo, -1.0f));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+        }        
+        multipleLights.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        model = glm::mat4(1.0f); if (currentFrame < tiempo) {
+            model = glm::translate(model, glm::vec3(2.0f, currentFrame - tiempo, 0.0f));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+        }        
+        multipleLights.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         // floor
-        glBindVertexArray(planeVAO);
+        glBindVertexArray(planeVAO);        
+        // bind diffuse map
+        multipleLights.setInt("material.diffuse", 2);
+        glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, floorTexture);
+        // bind specular map
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -5.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, -0.5f, 0.0f));
         model = glm::scale(model, glm::vec3(5.0f, 5.0f, 5.0f));
-        shader_blend.setMat4("model", model);
+        multipleLights.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // #########################################################################################  OBJETOS TRASLÚCIDOS
         // windows (from furthest to nearest)
+        shader_blend.use();
+        shader_blend.setMat4("projection", projection);
+        shader_blend.setMat4("view", view);
+        shader_blend.setVec3("viewPos", camera.Position);
         glBindVertexArray(transparentVAO);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, transparentTexture);
         for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
         {
             model = glm::mat4(1.0f);
-            model = glm::translate(model, it->second);
+            //model = glm::translate(model, it->second);
+            if (currentFrame < tiempo) {
+                model = glm::translate(model, glm::vec3(0.0f, -currentFrame, 0.0f) + it->second);
+            }
+            else {
+                model = glm::translate(model, it->second);
+            }
             shader_blend.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
@@ -685,7 +735,12 @@ int main()
         mochilaShader.setMat4("view", view);
         // render the loaded model
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(10.0f, 0.0f, 0.0f));
+        if (currentFrame < tiempo) {
+            model = glm::translate(model, glm::vec3(10.0f, currentFrame - tiempo, 0.0f));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(10.0f, 0.0f, 0.0f));
+        }        
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         mochilaShader.setMat4("model", model);
         ourModel.Draw(mochilaShader);
@@ -839,7 +894,7 @@ unsigned int loadTexture(char const* path)
     unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum format = GL_RGBA;
         if (nrComponents == 1)
             format = GL_RED;
         else if (nrComponents == 3)
