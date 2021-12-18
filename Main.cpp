@@ -8,7 +8,7 @@
 
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
-
+#include <learnopengl/model.h>
 
 #include <iostream>
 
@@ -23,43 +23,50 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+unsigned int loadTexture(const char* path);
+void iluminacion(Shader& shader);
 
-// TamaÒo de la pantalla
+// Tama√±o de la pantalla
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 1000;
 
-// camera
+// C√ÅMARA
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-
-// timing
+// TIEMPO
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
-// lighting
+// ILUMINACI√ìN
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 bool circuloLampara = true;
 int estadoAnt = GLFW_RELEASE;
-// positions of the point lights
+// posiciones de las l√°mparas
 glm::vec3 pointLightPositions[] = {
     glm::vec3(0.7f,  0.2f,  2.0f),
-    glm::vec3(2.3f, -3.3f, -4.0f),
+    glm::vec3(2.3f, 1.3f, -4.0f),
     glm::vec3(-4.0f,  2.0f, -12.0f),
     glm::vec3(0.0f,  0.0f, -3.0f)
 };
+// colores de las l√°mparas
+glm::vec3 pointLightColors[] = {
+    glm::vec3(236.0 / 255.0, 239.0 / 255.0, 248.0 / 255.0),
+    glm::vec3(157.0 / 255.0, 190.0 / 255.0, 212.0 / 255.0),
+    glm::vec3(209.0 / 255.0, 216.0 / 255.0, 226.0 / 255.0),
+    glm::vec3(79.0 / 255.0, 156.0 / 255.0, 200.0 / 255.0)
+};
 
-// #############################################################################
-// DeclaraciÛn de constantes a utilizar a lo largo de este programa
+// Declaraci√≥n de constantes a utilizar a lo largo de este programa
 const int IMAGE_SIZE_X = SCR_WIDTH;
 const int IMAGE_SIZE_Y = SCR_HEIGHT;
 const int NUM_SUBDIVISONES = 7;
 const double goldenRatio = (1 + sqrt(5)) / 2;
 const double pi = 3.1415926535897932384626433832795028841971;
 
-// Estructura que guarda la informaciÛn de los tri·ngulos a dibujar
+// Estructura que guarda la informaci√≥n de los tri√°ngulos a dibujar
 struct triangulo {
     int color;
     complex<double> A;
@@ -67,17 +74,15 @@ struct triangulo {
     complex<double> C;
 };
 
-// MÈtodo para subdividir todos los tri·ngulos de manera que el resultante sea un
+// M√©todo para subdividir todos los tri√°ngulos de manera que el resultante sea un
 // tipo de estructura como la de Penrose. Recibe una lista de apuntadores a los
-// tri·ngulos ya creados y regresa otra lista con la subdivisiÛn de los tri·ngulos.
-// PodrÌa optimizarse liberando la memoria de los tri·ngulos originales, pero no
-// dio tiempo.
+// tri√°ngulos ya creados y regresa otra lista con la subdivisi√≥n de los tri√°ngulos.
 list<struct triangulo*> subdividir(list<struct triangulo*> triangulos) {
     list<struct triangulo*> resultado = {};
     list<struct triangulo*> ::iterator it;
     // Iteramos sobre la lista que nos pasaron como argumento
     for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        // Subdividimos al tri·ngulo seg˙n el tipo de color que tenga
+        // Subdividimos al tri√°ngulo seg√∫n el tipo de color que tenga
         if ((*it)->color == 0) {
             complex<double> P;
             struct triangulo* t1 = (struct triangulo*)malloc(sizeof(struct triangulo));
@@ -130,22 +135,9 @@ list<struct triangulo*> subdividir(list<struct triangulo*> triangulos) {
     return resultado;
 }
 
-// Este mÈtodo no tiene una aplicaciÛn real en el cÛdigo; sin embargo, lo utilicÈ para asegurarme
-// de que los valores que estaba generando el algoritmo fueran los correctos.
-void imprimeTriangulos(list<struct triangulo*> triangulos) {
-    list<struct triangulo*> ::iterator it;
-    for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        printf("%f, %f, 0.0 \n%f, %f, 0.0 \n%f, %f, 0.0\n", (*it)->A.real(), (*it)->A.imag(),
-            (*it)->B.real(), (*it)->B.imag(), (*it)->C.real(), (*it)->C.imag());
-    }
-}
-// #########################################################################################
-
-// MÈtodo principal
 int main()
 {
-    // Parte para calcular lo de Penrose
-    // Empezamos con 10 tri·ngulos alrededor del origen.
+    // #########################################################################################  TESELACI√ìN DE PENROSE    
     list<struct triangulo*> triangulos = {};
     complex<double> A(0, 0);
 
@@ -161,125 +153,74 @@ int main()
             t->C = aux;
         }
         triangulos.push_back(t);        
-        // Para imprimir las orillas. Lo dejo por cualquier cosa.
-        // printf("(%.10f, %.10f)\n", t->B.real(), t->B.imag());        
-        // printf("(%.10f, %.10f)\n", t->C.real(), t->C.imag());
     }
 
-    // Subdividimos los tri·ngulos las veces que indice la constante NUM_SUBDIVISIONES.
+    // Subdividimos los tri√°ngulos las veces que indique la constante NUM_SUBDIVISIONES.
     for (int j = 0; j < NUM_SUBDIVISONES; j++) {
         triangulos = subdividir(triangulos);
     }
 
-    // Guardamos los tri·ngulos en formato de vÈrtices para OpenGL.
+    // Guardamos los tri√°ngulos en formato de v√©rtices para OpenGL.
     list<struct triangulo*> ::iterator it;
     vector<float> vert_ceros;
     vector<float> vert_unos;    
     for (it = triangulos.begin(); it != triangulos.end(); ++it) {
-        if ((*it)->color == 0) {            
-            vert_ceros.push_back((float)(*it)->A.real());
-            vert_ceros.push_back((float)(*it)->A.imag());
-            vert_ceros.push_back(0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(1.0f);
+        if ((*it)->color == 0) {    
+            // Parte delantera
+            vert_ceros.push_back((float)(*it)->A.real()); vert_ceros.push_back((float)(*it)->A.imag()); vert_ceros.push_back(0.5f); // Posici√≥n            
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->B.real()); vert_ceros.push_back((float)(*it)->B.imag()); vert_ceros.push_back(0.5f); // Posici√≥n           
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->C.real()); vert_ceros.push_back((float)(*it)->C.imag()); vert_ceros.push_back(0.5f); // Posici√≥n           
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(1.0f);                                     // Vector normal
 
-            vert_ceros.push_back((float)(*it)->B.real());
-            vert_ceros.push_back((float)(*it)->B.imag());
-            vert_ceros.push_back(0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(1.0f);
-
-            vert_ceros.push_back((float)(*it)->C.real());
-            vert_ceros.push_back((float)(*it)->C.imag());
-            vert_ceros.push_back(0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);            
-            vert_ceros.push_back(1.0f);
-
-            //------------- Parte 2
-            vert_ceros.push_back((float)(*it)->A.real());
-            vert_ceros.push_back((float)(*it)->A.imag());
-            vert_ceros.push_back(-0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(-1.0f);
-
-            vert_ceros.push_back((float)(*it)->B.real());
-            vert_ceros.push_back((float)(*it)->B.imag());
-            vert_ceros.push_back(-0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(-1.0f);
-
-            vert_ceros.push_back((float)(*it)->C.real());
-            vert_ceros.push_back((float)(*it)->C.imag());
-            vert_ceros.push_back(-0.5f);
-            // Vector normal:
-            vert_ceros.push_back(0.0f);
-            vert_ceros.push_back(0.0f);            
-            vert_ceros.push_back(-1.0f);
+            // Parte trasera
+            vert_ceros.push_back((float)(*it)->A.real()); vert_ceros.push_back((float)(*it)->A.imag()); vert_ceros.push_back(-0.5f); // Posici√≥n           
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(-1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->B.real()); vert_ceros.push_back((float)(*it)->B.imag()); vert_ceros.push_back(-0.5f); // Posici√≥n            
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(-1.0f);                                     // Vector normal
+            vert_ceros.push_back((float)(*it)->C.real()); vert_ceros.push_back((float)(*it)->C.imag()); vert_ceros.push_back(-0.5f); // Posici√≥n
+            vert_ceros.push_back(0.0f); vert_ceros.push_back(0.0f); vert_ceros.push_back(-1.0f);                                     // Vector normal
         }
         else {            
-            vert_unos.push_back((float)(*it)->A.real());
-            vert_unos.push_back((float)(*it)->A.imag());            
-            vert_unos.push_back(0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(1.0f);
+            // Parte delantera
+            vert_unos.push_back((float)(*it)->A.real()); vert_unos.push_back((float)(*it)->A.imag()); vert_unos.push_back(0.5f); // Posici√≥n            
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->B.real()); vert_unos.push_back((float)(*it)->B.imag()); vert_unos.push_back(0.5f); // Posici√≥n           
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->C.real()); vert_unos.push_back((float)(*it)->C.imag()); vert_unos.push_back(0.5f); // Posici√≥n           
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(1.0f);                                     // Vector normal
 
-            vert_unos.push_back((float)(*it)->B.real());
-            vert_unos.push_back((float)(*it)->B.imag());            
-            vert_unos.push_back(0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(1.0f);
-
-            vert_unos.push_back((float)(*it)->C.real());
-            vert_unos.push_back((float)(*it)->C.imag());            
-            vert_unos.push_back(0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(1.0f);
-
-            // Parte 2
-            vert_unos.push_back((float)(*it)->A.real());
-            vert_unos.push_back((float)(*it)->A.imag());
-            vert_unos.push_back(-0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(-1.0f);
-
-            vert_unos.push_back((float)(*it)->B.real());
-            vert_unos.push_back((float)(*it)->B.imag());
-            vert_unos.push_back(-0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(-1.0f);
-
-            vert_unos.push_back((float)(*it)->C.real());
-            vert_unos.push_back((float)(*it)->C.imag());
-            vert_unos.push_back(-0.5f);
-            // Vector normal:
-            vert_unos.push_back(0.0f);
-            vert_unos.push_back(0.0f);            
-            vert_unos.push_back(-1.0f);
+            // Parte trasera
+            vert_unos.push_back((float)(*it)->A.real()); vert_unos.push_back((float)(*it)->A.imag()); vert_unos.push_back(-0.5f); // Posici√≥n           
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(-1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->B.real()); vert_unos.push_back((float)(*it)->B.imag()); vert_unos.push_back(-0.5f); // Posici√≥n            
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(-1.0f);                                     // Vector normal
+            vert_unos.push_back((float)(*it)->C.real()); vert_unos.push_back((float)(*it)->C.imag()); vert_unos.push_back(-0.5f); // Posici√≥n
+            vert_unos.push_back(0.0f); vert_unos.push_back(0.0f); vert_unos.push_back(-1.0f);                                     // Vector normal
         }
-    }
-    // #######################################################################################
+    }    
 
-    // ------------------------------
+    // #########################################################################################  MEN√ö DE USUARIO
+    cout << "       MANUAL DE USUARIO\n";
+    cout << "-------------------------------------\n";
+    cout << "Para controlar la c√°mara, utilice:\n";
+    cout << "   -W: adentro\n";
+    cout << "   -A: izquierda\n";
+    cout << "   -S: afuera\n";
+    cout << "   -D: derecha\n";
+    cout << "\nAlternativamente, puede mover la bola del rat√≥n hacia \narriba en lugar de W o hacia abajo en lugar de S.\n";
+
+    cout << "\nPara controlar la l√°mpara, utilice:\n";
+    cout << "   -Up arrow: arriba\n";
+    cout << "   -Left arrow: izquierda\n";
+    cout << "   -Down arrow: abajo\n";
+    cout << "   -Right arrow: derecha\n";
+    cout << "   -ReP√°g: adentro\n";
+    cout << "   -AvP√°g: afuera\n";
+
+    cout << "\nPor √∫ltimo, use Espacio para pausar la luz en movimiento.";
+       
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -289,11 +230,9 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // glfw creaciÛn de la ventana
-    // --------------------
+    // GLFW: creaci√≥n de la ventana  
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Proyecto 2", NULL, NULL);
-    if (window == NULL)
-    {
+    if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
@@ -301,27 +240,28 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-
-    // tell GLFW to capture our mouse
+    glfwSetScrollCallback(window, scroll_callback);    
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
+    
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }    
 
-    // configure global opengl state
-    // -----------------------------
+    // voltear la textura en el eje-y antes de cargar el modelo
+    stbi_set_flip_vertically_on_load(true);
+    
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // construimos y compilamos los shaders
-    // ------------------------------------
+    // construimos y compilamos los shaders    
     Shader ourShader("shaders/proyecto2.vs", "shaders/proyecto2.fs");
     Shader lightCubeShader("shaders/light_cube.vs", "shaders/light_cube.fs");
+    Shader shader_blend("shaders/blending.vs", "shaders/blending.fs");
+    Shader mochilaShader("shaders/mochila.vs", "shaders/mochila.fs");
+    Shader multipleLights("shaders/multiple_lights.vs", "shaders/multiple_lights.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -368,9 +308,8 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
-
     float verticesOrilla[] = {
-         // VÈrtices                            // Vector normal
+         // V√©rtices                            // Vector normal
          0.9510565163,  0.3090169944,  0.5,     1.0,            0.0,            0.0, //A
          0.9510565163,  0.3090169944, -0.5,     1.0,            0.0,            0.0, //B
          0.9510565163, -0.3090169944,  0.5,     1.0,            0.0,            0.0, //C
@@ -441,12 +380,79 @@ int main()
          0.5877852523, -0.8090169944,  0.5,    0.809016994375, -0.587785252292, 0.0, //S
          0.5877852523, -0.8090169944, -0.5,    0.809016994375, -0.587785252292, 0.0  //T
     };
+    float cubeVertices[] = {
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+    };
+    float planeVertices[] = {
+        // positions          // normal         // textura 
+         5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+        -5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+
+         5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+         5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 2.0f
+    };
+    float transparentVertices[] = {
+        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+        0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+        1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+        1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    // load model  
+    Model ourModel("texturas/backpack/backpack.obj");
+
+    // #########################################################################################  VAOs y VBOs
     unsigned int VBOs[3], VAOs[3];
     glGenVertexArrays(3, VAOs); 
     glGenBuffers(3, VBOs);    
-    // Tri·ngulos tipo cero de la teselaciÛn
-    // --------------------
+    // Tri√°ngulos tipo cero de la teselaci√≥n    
     glBindVertexArray(VAOs[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
     glBufferData(GL_ARRAY_BUFFER, vert_ceros.size() * sizeof(float), &vert_ceros[0], GL_STATIC_DRAW);
@@ -454,8 +460,7 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Tri·ngulos tipo uno de la teselaciÛn
-    // ---------------------
+    // Tri√°ngulos tipo uno de la teselaci√≥n    
     glBindVertexArray(VAOs[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
     glBufferData(GL_ARRAY_BUFFER, vert_unos.size() * sizeof(float), &vert_unos[0], GL_STATIC_DRAW);
@@ -463,7 +468,7 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Orilas de la teselaciÛn
+    // Orilas de la teselaci√≥n
     glBindVertexArray(VAOs[2]);
     glBindBuffer(GL_ARRAY_BUFFER, VBOs[2]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verticesOrilla), verticesOrilla, GL_STATIC_DRAW);
@@ -495,99 +500,94 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Para dibujar ˙nicamente los bordes
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // ###### VAO's de los objetos que usan texturas
+    // cube VAO
+    unsigned int cubeBlendVAO, cubeBlendVBO;
+    glGenVertexArrays(1, &cubeBlendVAO);
+    glGenBuffers(1, &cubeBlendVBO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, cubeBlendVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+    
+    glBindVertexArray(cubeBlendVAO);    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);    
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    // plane VAO
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+
+    glBindVertexArray(planeVAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    // transparent VAO
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    // load textures    
+    unsigned int cubeTexture = loadTexture("texturas/marble.jpg");
+    unsigned int floorTexture = loadTexture("texturas/metal.png");
+    unsigned int transparentTexture = loadTexture("texturas/window.png");
+    unsigned int specularMap = loadTexture("texturas/container2_specular.png");
+
+    float tiempo = 20.0f;
+    // transparent window locations    
+    vector<glm::vec3> windows {
+        glm::vec3(-4.5f, 5.0f, -0.48f),
+        glm::vec3(2.75f, 1.0f, 0.51f),
+        glm::vec3(0.0f, 0.0f, 0.7f),
+        glm::vec3(4.3f, 0.0f, -2.3f),
+        glm::vec3(-0.5f, 2.0f, -0.6f)
+    };
 
     while (!glfwWindowShouldClose(window)) {
-        // per-frame time logic
-        // --------------------
+        // per-frame time logic        
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         processInput(window);                                
-
-        //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClearColor(185.0 / 255.0, 200.0 / 255.0, 215.0 / 255.0, 1.0);
+        
+        //glClearColor(185.0 / 255.0, 200.0 / 255.0, 215.0 / 255.0, 1.0);
+        glClearColor(105.0 / 255.0, 137.0 / 255.0, 172.0 / 255.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // change the light's position values over time (can be done anywhere in the render loop actually, but try to do it at least before using the light source positions)
-        // Mover la luz en una esfera - https://en.wikipedia.org/wiki/Spiral#Spherical_spirals
+        
+        // Mover la luz en una esfera
         if (circuloLampara) {
             float c = 18.0;
-            float t = sin(0.1 * glfwGetTime()) * (pi / 2) + (pi / 2);
+            float t = sin(0.1 * currentFrame) * (pi / 2) + (pi / 2);
             float r = 2;
 
-            pointLightPositions[0].x = r * sin(t) * sin(c * t);
+            pointLightPositions[0].x = r * sin(t) * sin(c * t) + 10;
             pointLightPositions[0].y = r * cos(t);
             pointLightPositions[0].z = r * sin(t) * cos(c * t);
         }        
-        
-        // Pasar la ubicaciÛn de la luz y de dÛnde se est· viendo
-        ourShader.use();                   
-        // ourShader.setVec3("light.position", lightPos);
+                
+        ourShader.use();                           
         ourShader.setVec3("viewPos", camera.Position);        
-
-        /*
-           Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
-           the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
-           by defining light types as classes and set their values in there, or by using a more efficient uniform approach
-           by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
-        */
-        glm::vec3 pointLightColors[] = {
-            glm::vec3(236.0/255.0, 239.0 / 255.0, 248.0 / 255.0),
-            glm::vec3(157.0 / 255.0, 190.0 / 255.0, 212.0 / 255.0),
-            glm::vec3(209.0 / 255.0, 216.0 / 255.0, 226.0 / 255.0),            
-            glm::vec3(79.0 / 255.0, 156.0 / 255.0, 200.0 / 255.0)
-        };
-        // directional light
-        ourShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        ourShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
-        ourShader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
-        ourShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        // point light 1
-        ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-        ourShader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
-        ourShader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
-        ourShader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
-        ourShader.setFloat("pointLights[0].constant", 1.0f);
-        ourShader.setFloat("pointLights[0].linear", 0.09);
-        ourShader.setFloat("pointLights[0].quadratic", 0.032);
-        // point light 2
-        ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-        ourShader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
-        ourShader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
-        ourShader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
-        ourShader.setFloat("pointLights[1].constant", 1.0f);
-        ourShader.setFloat("pointLights[1].linear", 0.09);
-        ourShader.setFloat("pointLights[1].quadratic", 0.032);
-        // point light 3
-        ourShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-        ourShader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
-        ourShader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
-        ourShader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
-        ourShader.setFloat("pointLights[2].constant", 1.0f);
-        ourShader.setFloat("pointLights[2].linear", 0.09);
-        ourShader.setFloat("pointLights[2].quadratic", 0.032);
-        // point light 4
-        ourShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-        ourShader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
-        ourShader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
-        ourShader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
-        ourShader.setFloat("pointLights[3].constant", 1.0f);
-        ourShader.setFloat("pointLights[3].linear", 0.09);
-        ourShader.setFloat("pointLights[3].quadratic", 0.032);
-        // spotLight
-        ourShader.setVec3("spotLight.position", camera.Position);
-        ourShader.setVec3("spotLight.direction", camera.Front);
-        ourShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-        ourShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-        ourShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-        ourShader.setFloat("spotLight.constant", 1.0f);
-        ourShader.setFloat("spotLight.linear", 0.09);
-        ourShader.setFloat("spotLight.quadratic", 0.032);
-        ourShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-        ourShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+        iluminacion(ourShader);
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -598,13 +598,16 @@ int main()
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
-        if (glfwGetTime() <= 10) {
-            model = glm::translate(model, glm::vec3(10 - glfwGetTime(), 0.0f, 0.0f));
-        }           
+        if (currentFrame <= tiempo) {
+            model = glm::translate(model, glm::vec3(0.0f, currentFrame - tiempo - 1, -10.0));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(0.0, 1.0f, -10.0f));
+        }        
         ourShader.setMat4("model", model);
 
-        // ------------------------------- Render tri·ngulos tipo cero (azul obscuro)
-        // material properties        
+        // #########################################################################################  RENDER TESELACI√ìN
+        // ------------------------------- Render tri√°ngulos tipo cero (azul obscuro)                
         ourShader.setVec3("material.diffuse", 0.043f, 0.145f, 0.271f);
         ourShader.setVec3("material.specular", 1.0f, 1.0f, 1.0f);
         ourShader.setFloat("material.shininess", 32.0f);
@@ -616,8 +619,7 @@ int main()
         glBindVertexArray(VAOs[2]);
         glDrawArrays(GL_TRIANGLES, 0, sizeof(verticesOrilla));
 
-        // ------------------------------- Render tri·ngulos tipo uno (azul claro)
-        // material properties
+        // ------------------------------- Render tri√°ngulos tipo uno (azul claro)        
         ourShader.setVec3("material.diffuse", 0.698f, 0.761f, 0.929f);
         ourShader.setVec3("material.specular", 0.1f, 0.1f, 0.1f);
         ourShader.setFloat("material.shininess", 16.0f);
@@ -625,18 +627,16 @@ int main()
         glBindVertexArray(VAOs[1]);
         glDrawArrays(GL_TRIANGLES, 0, vert_unos.size());        
 
-        // also draw the lamp object(s)
+        // #########################################################################################  RENDER DE LAS L√ÅMPARAS
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
-
-        // we now draw as many light bulbs as we have point lights.
+        model = glm::mat4(1.0f);        
         glBindVertexArray(lightCubeVAO);
-        for (unsigned int i = 0; i < 4; i++)
-        {
+        for (unsigned int i = 0; i < 4; i++) {
             model = glm::mat4(1.0f);
-            if (glfwGetTime() < 10) {
-                model = glm::translate(model, glm::vec3(10 - glfwGetTime() - pointLightPositions[i].x, pointLightPositions[i].y, 10 - glfwGetTime() - pointLightPositions[i].z));
+            if (currentFrame < tiempo) {
+                model = glm::translate(model, glm::vec3(pointLightPositions[i].x, currentFrame - pointLightPositions[i].y - tiempo, pointLightPositions[i].z));
             }
             else {
                 model = glm::translate(model, pointLightPositions[i]);
@@ -645,7 +645,105 @@ int main()
             lightCubeShader.setMat4("model", model);
             lightCubeShader.setVec3("ourColor", pointLightColors[i]);
             glDrawArrays(GL_TRIANGLES, 0, 36);
+        }        
+
+        // #########################################################################################  OBJETOS CON TEXTURA
+        // ordenar los objetos antes de renderizarlos
+        std::map<float, glm::vec3> sorted;
+        for (unsigned int i = 0; i < windows.size(); i++) {
+            float distance = glm::length(camera.Position - windows[i]);
+            sorted[distance] = windows[i];
+        }        
+        // render objetos
+        multipleLights.use();                
+        multipleLights.setInt("material.diffuse", 0);
+        multipleLights.setInt("material.specular", 1);
+        iluminacion(multipleLights);
+        multipleLights.setFloat("material.shininess", 32.0f);
+        multipleLights.setMat4("projection", projection);
+        multipleLights.setMat4("view", view);
+        // cubes
+        glBindVertexArray(cubeBlendVAO);
+        // bind diffuse map
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture);
+        // bind specular map
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+        model = glm::mat4(1.0f);
+        if (currentFrame < tiempo) {
+            model = glm::translate(model, glm::vec3(-1.0f, currentFrame - tiempo, -1.0f));
         }
+        else {
+            model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+        }        
+        multipleLights.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        model = glm::mat4(1.0f); if (currentFrame < tiempo) {
+            model = glm::translate(model, glm::vec3(2.0f, currentFrame - tiempo, 0.0f));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+        }        
+        multipleLights.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // floor
+        glBindVertexArray(planeVAO);        
+        // bind diffuse map
+        multipleLights.setInt("material.diffuse", 2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, floorTexture);
+        // bind specular map
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -0.5f, 0.0f));
+        model = glm::scale(model, glm::vec3(5.0f, 5.0f, 5.0f));
+        multipleLights.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // #########################################################################################  OBJETOS TRASL√öCIDOS
+        // windows (from furthest to nearest)
+        shader_blend.use();
+        shader_blend.setMat4("projection", projection);
+        shader_blend.setMat4("view", view);
+        shader_blend.setVec3("viewPos", camera.Position);
+        glBindVertexArray(transparentVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+        {
+            model = glm::mat4(1.0f);
+            //model = glm::translate(model, it->second);
+            if (currentFrame < tiempo) {
+                model = glm::translate(model, glm::vec3(0.0f, -currentFrame, 0.0f) + it->second);
+            }
+            else {
+                model = glm::translate(model, it->second);
+            }
+            shader_blend.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+
+        mochilaShader.use();        
+        mochilaShader.setFloat("material.shininess", 32.0f);
+        iluminacion(mochilaShader);
+
+        // LA MOCHILA        
+        mochilaShader.setMat4("projection", projection);
+        mochilaShader.setMat4("view", view);
+        // render the loaded model
+        model = glm::mat4(1.0f);
+        if (currentFrame < tiempo) {
+            model = glm::translate(model, glm::vec3(10.0f, currentFrame - tiempo, 0.0f));
+        }
+        else {
+            model = glm::translate(model, glm::vec3(10.0f, 0.0f, 0.0f));
+        }        
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        mochilaShader.setMat4("model", model);
+        ourModel.Draw(mochilaShader);
 
         // glfw: swap buffers
         glfwSwapBuffers(window);
@@ -663,10 +761,61 @@ int main()
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window)
-{
+// M√©todo para pasarle las caracter√≠sticas de la iluminaci√≥n a un shader.
+void iluminacion(Shader &shader) {    
+    shader.setVec3("viewPos", camera.Position);
+    // directional light
+    shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+    shader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 1.0f);
+    shader.setVec3("dirLight.specular", 0.8f, 0.8f, 0.8f);
+    shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+    // point light 1
+    shader.setVec3("pointLights[0].position", pointLightPositions[0]);
+    shader.setVec3("pointLights[0].ambient", pointLightColors[0].x * 0.1, pointLightColors[0].y * 0.1, pointLightColors[0].z * 0.1);
+    shader.setVec3("pointLights[0].diffuse", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+    shader.setVec3("pointLights[0].specular", pointLightColors[0].x, pointLightColors[0].y, pointLightColors[0].z);
+    shader.setFloat("pointLights[0].constant", 1.0f);
+    shader.setFloat("pointLights[0].linear", 0.09);
+    shader.setFloat("pointLights[0].quadratic", 0.032);
+    // point light 2
+    shader.setVec3("pointLights[1].position", pointLightPositions[1]);
+    shader.setVec3("pointLights[1].ambient", pointLightColors[1].x * 0.1, pointLightColors[1].y * 0.1, pointLightColors[1].z * 0.1);
+    shader.setVec3("pointLights[1].diffuse", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+    shader.setVec3("pointLights[1].specular", pointLightColors[1].x, pointLightColors[1].y, pointLightColors[1].z);
+    shader.setFloat("pointLights[1].constant", 1.0f);
+    shader.setFloat("pointLights[1].linear", 0.09);
+    shader.setFloat("pointLights[1].quadratic", 0.032);
+    // point light 3
+    shader.setVec3("pointLights[2].position", pointLightPositions[2]);
+    shader.setVec3("pointLights[2].ambient", pointLightColors[2].x * 0.1, pointLightColors[2].y * 0.1, pointLightColors[2].z * 0.1);
+    shader.setVec3("pointLights[2].diffuse", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+    shader.setVec3("pointLights[2].specular", pointLightColors[2].x, pointLightColors[2].y, pointLightColors[2].z);
+    shader.setFloat("pointLights[2].constant", 1.0f);
+    shader.setFloat("pointLights[2].linear", 0.09);
+    shader.setFloat("pointLights[2].quadratic", 0.032);
+    // point light 4
+    shader.setVec3("pointLights[3].position", pointLightPositions[3]);
+    shader.setVec3("pointLights[3].ambient", pointLightColors[3].x * 0.1, pointLightColors[3].y * 0.1, pointLightColors[3].z * 0.1);
+    shader.setVec3("pointLights[3].diffuse", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+    shader.setVec3("pointLights[3].specular", pointLightColors[3].x, pointLightColors[3].y, pointLightColors[3].z);
+    shader.setFloat("pointLights[3].constant", 1.0f);
+    shader.setFloat("pointLights[3].linear", 0.09);
+    shader.setFloat("pointLights[3].quadratic", 0.032);
+    // spotLight
+    shader.setVec3("spotLight.position", camera.Position);
+    shader.setVec3("spotLight.direction", camera.Front);
+    shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+    shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+    shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+    shader.setFloat("spotLight.constant", 1.0f);
+    shader.setFloat("spotLight.linear", 0.09);
+    shader.setFloat("spotLight.quadratic", 0.032);
+    shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+    shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+}
+
+// GFLW: input del usuario
+void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
@@ -679,7 +828,7 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     
-    // Mover la l·mpara
+    // Mover la l√°mpara
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
         pointLightPositions[1].x += 0.01;
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
@@ -693,16 +842,15 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
         pointLightPositions[1].z -= 0.01;
 
+    // Para detectar cu√°ndo hay que mover la l√°mpara y cu√°ndo no
     int estadoNuevo = glfwGetKey(window, GLFW_KEY_SPACE);
     if (estadoNuevo == GLFW_RELEASE && estadoAnt == GLFW_PRESS)
         circuloLampara = !circuloLampara;
     estadoAnt = estadoNuevo;
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+// GLFW: cambio del tama√±o de la ventana
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     if (width >= height) {
         glViewport(0, 0, width, width);
     }
@@ -711,8 +859,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     }
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
+// GLFW: movimiento del mouse
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
@@ -731,9 +878,46 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
+// GLFW: para detectar el scroll del mouse
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
+}
+
+// Funci√≥n para cargar una textura en 2D
+unsigned int loadTexture(char const* path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format = GL_RGBA;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
