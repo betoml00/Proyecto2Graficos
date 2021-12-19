@@ -201,25 +201,25 @@ int main()
         }
     }    
 
-    // #########################################################################################  MENÚ DE USUARIO
-    cout << "       MANUAL DE USUARIO\n";
-    cout << "-------------------------------------\n";
-    cout << "Para controlar la cámara, utilice:\n";
-    cout << "   -W: adentro\n";
-    cout << "   -A: izquierda\n";
-    cout << "   -S: afuera\n";
-    cout << "   -D: derecha\n";
-    cout << "\nAlternativamente, puede mover la bola del ratón hacia \narriba en lugar de W o hacia abajo en lugar de S.\n";
+    // #########################################################################################  MENÚ DE USUARIO    
+    printf("       MANUAL DE USUARIO\n");
+    printf("-------------------------------------\n");
+    printf("Para controlar la c%cmara, utilice:\n", 160);
+    printf("   -W: adentro\n");
+    printf("   -A: izquierda\n");
+    printf("   -S: afuera\n");
+    printf("   -D: derecha\n");
+    printf("\nAlternativamente, puede mover la bola del rat%cn hacia \narriba en lugar de W o hacia abajo en lugar de S.\n", 162);
 
-    cout << "\nPara controlar la lámpara, utilice:\n";
-    cout << "   -Up arrow: arriba\n";
-    cout << "   -Left arrow: izquierda\n";
-    cout << "   -Down arrow: abajo\n";
-    cout << "   -Right arrow: derecha\n";
-    cout << "   -RePág: adentro\n";
-    cout << "   -AvPág: afuera\n";
+    printf("\nPara controlar la l%cmpara, utilice:\n", 160);
+    printf("   -Up arrow: arriba\n");
+    printf("   -Left arrow: izquierda\n");
+    printf("   -Down arrow: abajo\n");
+    printf("   -Right arrow: derecha\n");
+    printf("   -ReP%cg: adentro\n", 160);
+    printf("   -AvP%cg: afuera\n", 160);
 
-    cout << "\nPor último, use Espacio para pausar la luz en movimiento.";
+    printf("\nPor %cltimo, use Espacio para pausar la luz en movimiento.", 163);
        
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
